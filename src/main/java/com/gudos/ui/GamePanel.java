@@ -48,6 +48,8 @@ public final class GamePanel extends ScenePanel {
     private Scene lastGudoLocation;
     private int lastRepelled;
     private double retreatNotice;
+    private Runnable secret = () -> { };
+    private int paperClicks;
 
     public GamePanel(GameSession session, AssetManager assets, Supplier<Settings> settings,
                      Consumer<Sound> sound, Runnable pause) {
@@ -99,9 +101,24 @@ public final class GamePanel extends ScenePanel {
         });
         addMouseListener(new MouseAdapter() {
             @Override public void mouseExited(MouseEvent event) { pointerInside = false; }
+            @Override public void mouseClicked(MouseEvent event) {
+                if (!SwingUtilities.isLeftMouseButton(event) || !session.monitorOpen() || session.camera() != 4 || session.paused() || session.finished()) return;
+                Point2D p = scenePoint(event.getPoint());
+                // The projection is recomputed at the current sweep, then mapped back to the source image.
+                var source = assets.scene(Scene.CAM_04, session.sceneState(Scene.CAM_04));
+                cameraProjection.render(source, CameraMotion.pan(Scene.CAM_04, session.elapsed()));
+                Point pixel = cameraProjection.sourcePoint((int) (p.getX() * PanoramaRenderer.WIDTH / WIDTH), (int) (p.getY() * PanoramaRenderer.HEIGHT / HEIGHT));
+                if (pixel != null && pixel.x >= source.getWidth() * 0.285 && pixel.x <= source.getWidth() * 0.325
+                        && pixel.y >= source.getHeight() * 0.24 && pixel.y <= source.getHeight() * 0.40 && ++paperClicks >= 5) {
+                    paperClicks = 0;
+                    secret.run();
+                }
+            }
         });
         syncControls();
     }
+
+    public void onSecret(Runnable action) { secret = action; }
 
     private GameButton button(String label, GameButton.Style style, Runnable action) {
         GameButton button = new GameButton(label, style, action);

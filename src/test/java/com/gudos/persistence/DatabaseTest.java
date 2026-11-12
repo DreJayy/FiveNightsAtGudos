@@ -83,6 +83,57 @@ class DatabaseTest {
         assertFalse(progress.unlocked(6));
     }
 
+    @Test void secretCompletionIsAtomicPersistentAndSpecificToProfile() throws Exception {
+        GameSession failed = new GameSession(1);
+        failed.failSecret();
+        database.saveRun("Player", failed.result());
+        assertFalse(database.secretCompleted("Player"));
+        assertEquals(Outcome.MINIGAME_FAILED, database.loadRuns("Player").get(0).outcome());
+        assertEquals(1, database.loadProgress("Player").nextNight());
+
+        GameSession won = new GameSession(1);
+        won.completeSecret();
+        database.saveRun("Player", won.result(), true);
+        database.saveRun("Player", won.result(), true);
+        Database reopened = new Database(directory.resolve("test.db"));
+        assertTrue(reopened.secretCompleted("player"));
+        assertFalse(reopened.secretCompleted("Other"));
+        assertEquals(2, reopened.loadProgress("Player").nextNight());
+        assertEquals(2, reopened.loadRuns("Player").size());
+    }
+
+    @Test void migratesVersionTwoRunsBeforeSavingASecretFailure() throws Exception {
+        Path file = directory.resolve("version2.db");
+        Database old = new Database(file);
+        RunRecord existing = completed(1);
+        old.saveRun("Veteran", existing);
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + file.toAbsolutePath());
+             var sql = connection.createStatement()) {
+            sql.execute("ALTER TABLE night_runs RENAME TO newer_runs");
+            sql.execute("DROP INDEX runs_by_profile");
+            sql.execute("""
+                    CREATE TABLE night_runs (
+                        id TEXT PRIMARY KEY, profile_id INTEGER NOT NULL REFERENCES profiles(id),
+                        night INTEGER NOT NULL CHECK(night BETWEEN 1 AND 5),
+                        elapsed_seconds REAL NOT NULL CHECK(elapsed_seconds >= 0),
+                        power_remaining REAL NOT NULL CHECK(power_remaining BETWEEN 0 AND 100),
+                        outcome TEXT NOT NULL CHECK(outcome IN ('COMPLETED','POWER_OUT','ABANDONED','CAUGHT')),
+                        started_at TEXT NOT NULL, ended_at TEXT NOT NULL
+                    )
+                    """);
+            sql.execute("INSERT INTO night_runs SELECT * FROM newer_runs");
+            sql.execute("DROP TABLE newer_runs");
+            sql.execute("CREATE INDEX runs_by_profile ON night_runs(profile_id, ended_at DESC)");
+            sql.execute("PRAGMA user_version=2");
+        }
+        Database migrated = new Database(file);
+        GameSession failed = new GameSession(2);
+        failed.failSecret();
+        migrated.saveRun("Veteran", failed.result());
+        assertTrue(migrated.loadRuns("Veteran").contains(existing));
+        assertTrue(migrated.loadRuns("Veteran").contains(failed.result()));
+    }
+
     @Test void migratesLegacyRunsAndPreservesProgressWhenRecordingCaughtOutcome() throws Exception {
         Path file = directory.resolve("legacy.db");
         Database legacy = new Database(file);
