@@ -27,7 +27,7 @@ public final class Database {
             int schemaVersion;
             try (ResultSet version = sql.executeQuery("PRAGMA user_version")) {
                 schemaVersion = version.next() ? version.getInt(1) : 0;
-                if (schemaVersion > 3) throw new SQLException("This database belongs to a newer game version.");
+                if (schemaVersion > 5) throw new SQLException("This database belongs to a newer game version.");
             }
             // profiles identifies a player by a unique, case-insensitive local name.
             sql.execute("""
@@ -80,8 +80,20 @@ public final class Database {
                     throw error;
                 } finally { connection.setAutoCommit(true); }
             }
-            sql.execute("CREATE TABLE IF NOT EXISTS secret_completions (profile_id INTEGER PRIMARY KEY REFERENCES profiles(id))");
-            sql.execute("PRAGMA user_version=3");
+            if (schemaVersion == 3) {
+                connection.setAutoCommit(false);
+                try {
+                    sql.execute(runsTable("night_runs_v4"));
+                    sql.execute("INSERT INTO night_runs_v4 SELECT * FROM night_runs");
+                    sql.execute("DROP TABLE night_runs");
+                    sql.execute("ALTER TABLE night_runs_v4 RENAME TO night_runs");
+                    sql.execute("CREATE INDEX runs_by_profile ON night_runs(profile_id, ended_at DESC)");
+                    connection.commit();
+                } catch (SQLException error) { connection.rollback(); throw error; }
+                finally { connection.setAutoCommit(true); }
+            }
+            // Legacy completion tables, if present, are left intact but no longer restrict play.
+            sql.execute("PRAGMA user_version=5");
         }
     }
 
@@ -95,7 +107,7 @@ public final class Database {
                         night INTEGER NOT NULL CHECK(night BETWEEN 1 AND 5),
                         elapsed_seconds REAL NOT NULL CHECK(elapsed_seconds >= 0),
                         power_remaining REAL NOT NULL CHECK(power_remaining BETWEEN 0 AND 100),
-                        outcome TEXT NOT NULL CHECK(outcome IN ('COMPLETED','POWER_OUT','ABANDONED','CAUGHT','MINIGAME_FAILED')),
+                        outcome TEXT NOT NULL CHECK(outcome IN ('COMPLETED','POWER_OUT','ABANDONED','CAUGHT','MINIGAME_FAILED','MINIGAME_COMPLETED')),
                         started_at TEXT NOT NULL,
                         ended_at TEXT NOT NULL
                     )
@@ -164,20 +176,6 @@ public final class Database {
 
     // Atomically save an attempt and its unlock update. The separate text report is not in this transaction.
     public Progress saveRun(String name, RunRecord run) throws SQLException {
-        return saveRun(name, run, false);
-    }
-
-    public boolean secretCompleted(String name) throws SQLException {
-        try (Connection connection = connect()) {
-            long id = profile(connection, name);
-            try (PreparedStatement query = connection.prepareStatement("SELECT 1 FROM secret_completions WHERE profile_id=?")) {
-                query.setLong(1, id);
-                try (ResultSet rows = query.executeQuery()) { return rows.next(); }
-            }
-        }
-    }
-
-    public Progress saveRun(String name, RunRecord run, boolean secretCompleted) throws SQLException {
         try (Connection connection = connect()) {
             long profileId = profile(connection, name);
             connection.setAutoCommit(false);
@@ -209,13 +207,6 @@ public final class Database {
                         update.setString(3, run.endedAt().toString());
                         update.setLong(4, profileId);
                         update.executeUpdate();
-                    }
-                }
-                if (secretCompleted) {
-                    if (run.outcome() != Outcome.COMPLETED) throw new SQLException("Secret completion requires a completed shift");
-                    try (PreparedStatement insert = connection.prepareStatement("INSERT INTO secret_completions(profile_id) VALUES(?) ON CONFLICT DO NOTHING")) {
-                        insert.setLong(1, profileId);
-                        insert.executeUpdate();
                     }
                 }
                 // Both attempt and progress changes become permanent together.

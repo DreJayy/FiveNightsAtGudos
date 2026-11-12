@@ -60,9 +60,9 @@ public final class GamePanel extends ScenePanel {
         this.pause = pause;
         setFocusTraversalKeysEnabled(false);
         monitorButton = place(button("OPEN MONITOR    [SPACE]", GameButton.Style.MONITOR, this::toggleMonitor), 335, 647, 650, 55);
-        monitorButton.setToolTipText("Raise/lower monitor [Space / Tab]");
+        monitorButton.getAccessibleContext().setAccessibleDescription("Raise or lower the monitor with Space or Tab.");
         lightButton = place(button("HOLD LIGHT  [F]", GameButton.Style.LIGHT, () -> { }), 21, 326, 74, 127);
-        lightButton.setToolTipText("Face Sir Gudo's doorway and hold F until he fades away.");
+        lightButton.getAccessibleContext().setAccessibleDescription("Face Sir Gudo's doorway and hold F until he fades away.");
         lightButton.addMouseListener(new MouseAdapter() {
             @Override public void mousePressed(MouseEvent event) { if (SwingUtilities.isLeftMouseButton(event)) { mouseLight = true; updateLight(); } }
             @Override public void mouseReleased(MouseEvent event) { mouseLight = false; updateLight(); }
@@ -73,8 +73,7 @@ public final class GamePanel extends ScenePanel {
         for (int camera = 1; camera <= 6; camera++) {
             int number = camera;
             GameButton control = button("CAM\n%02d".formatted(camera), GameButton.Style.CAMERA, () -> selectCamera(number));
-            control.setToolTipText("CAM %02d — %s [%d]".formatted(camera, Scene.camera(camera).label(), camera));
-            control.getAccessibleContext().setAccessibleName(control.getToolTipText());
+            control.getAccessibleContext().setAccessibleName("CAM %02d — %s [%d]".formatted(camera, Scene.camera(camera).label(), camera));
             cameras.add(place(control, positions[camera - 1][0], positions[camera - 1][1], 64, 42));
             bind("pressed " + camera, "camera-" + camera, () -> selectCamera(number));
         }

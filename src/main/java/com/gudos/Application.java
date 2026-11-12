@@ -45,7 +45,6 @@ public final class Application implements Navigation {
     private GamePanel gamePanel;
     private SecretPanel secretPanel;
     // Retained until the corresponding run and its text report have both been saved.
-    private boolean pendingSecretCompletion;
     private int nextNightAfterSecret;
     private ResultPanel resultPanel;
     // Capture the player when the shift starts so its result stays attached to that profile.
@@ -159,7 +158,6 @@ public final class Application implements Navigation {
 
     // Clear the previous shift's UI state; saved database progress is kept separately.
     private void showMenu() {
-        pendingSecretCompletion = false;
         nextNightAfterSecret = 0;
         session = null;
         gamePanel = null;
@@ -228,7 +226,6 @@ public final class Application implements Navigation {
         pendingRun = null;
         pendingSaved = false;
         resultPanel = null;
-        pendingSecretCompletion = false;
         nextNightAfterSecret = 0;
         activeProfile = settings.playerName();
         session = new GameSession(night);
@@ -239,41 +236,43 @@ public final class Application implements Navigation {
         audio.ambience(Sound.FAN);
     }
 
-    // Freeze the current shift while checking profile eligibility off the Swing event thread.
+    // Opening does not wait for storage; previous secret attempts never block another play.
     private void openSecret() {
         if (busy || session == null || session.night() >= 5 || current != gamePanel) return;
         gamePanel.releaseControls();
         session.pause();
-        busy = true;
-        show(new LoadingPanel("Checking the stockroom..."));
-        submit(() -> database.secretCompleted(activeProfile), completed -> {
-            busy = false;
-            if (completed) { session.resume(); show(gamePanel); return; }
-            // The builder defines level pieces separately from gameplay and Swing rendering.
-            SecretLevel level = new SecretLevelBuilder().player(80).bundle(240)
-                    .destination(new Rectangle(1135, 510, 125, 130))
-                    .platform(new Rectangle(420, 555, 100, 20))
-                    .platform(new Rectangle(740, 555, 100, 20))
-                    .cover(new Rectangle(345, 500, 115, 140))
-                    .cover(new Rectangle(690, 500, 115, 140))
-                    .cover(new Rectangle(1000, 500, 90, 140))
-                    .witness(530, 960).timeLimit(60).build();
-            secretPanel = new SecretPanel(new SecretGame(level), this::finishSecret);
+        try {
+            secretPanel = new SecretPanel(new SecretGame(createSecretLevel()), this::finishSecret, audio::play, () -> settings.reducedEffects());
             show(secretPanel);
-            audio.ambience(Sound.HUM);
-        }, error -> {
-            busy = false;
+            audio.ambience(Sound.SECRET_AMBIENCE);
+        } catch (RuntimeException error) {
             session.resume();
             show(gamePanel);
-            error("Could not check the secret's completion status.", error);
-        });
+            error("The minigame could not be opened. Your shift is still running.", error);
+        }
     }
 
-    // Both outcomes finish this exact attempt; automatic navigation waits for its save.
+    // Kept separate from navigation so the exact production level can be tested headlessly.
+    static SecretLevel createSecretLevel() {
+        return new SecretLevelBuilder().width(2560).player(80).bundle(240)
+                    .destination(new Rectangle(2410, 510, 125, 130))
+                    .platform(new Rectangle(420, 555, 100, 20))
+                    .platform(new Rectangle(1120, 555, 100, 20))
+                    .platform(new Rectangle(1820, 555, 100, 20))
+                    .cover(new Rectangle(345, 500, 165, 140))
+                    .cover(new Rectangle(700, 500, 165, 140))
+                    .cover(new Rectangle(1050, 500, 165, 140))
+                    .cover(new Rectangle(1400, 500, 165, 140))
+                    .cover(new Rectangle(1750, 500, 165, 140))
+                    .cover(new Rectangle(2100, 500, 165, 140))
+                    .witness(530, 850).witness(1120, 1500).witness(1830, 2200).timeLimit(60).build();
+    }
+
+    // SecretPanel calls this after the frozen/glitch success or failure sequence.
+    // Finish this exact attempt; automatic navigation waits for the normal, retryable save.
     private void finishSecret(boolean won) {
         if (session == null || session.finished() || current != secretPanel) return;
-        pendingSecretCompletion = won;
-        nextNightAfterSecret = won ? session.night() + 1 : session.night();
+        nextNightAfterSecret = session.night();
         if (won) session.completeSecret(); else session.failSecret();
         finishShift();
     }
@@ -314,7 +313,7 @@ public final class Application implements Navigation {
         pendingRun = session.result();
         pendingProfile = activeProfile;
         pendingSaved = false;
-        audio.ambience(Sound.HUM);
+        if (nextNightAfterSecret == 0) audio.ambience(Sound.HUM);
         if (pendingRun.outcome() == Outcome.COMPLETED) audio.play(Sound.COMPLETE);
         else if (pendingRun.outcome() == Outcome.POWER_OUT) audio.play(Sound.POWER_DOWN);
         resultPanel = new ResultPanel(assets, this, pendingRun, this::savePendingRun);
@@ -326,7 +325,8 @@ public final class Application implements Navigation {
                 show(resultPanel);
                 audio.ambience(Sound.HUM);
             }));
-        } else show(resultPanel);
+        } else if (nextNightAfterSecret == 0) show(resultPanel);
+        // For secret outcomes, keep the frozen minigame visible until the save finishes.
         // For CAUGHT, saving begins while the jumpscare is still playing.
         savePendingRun();
     }
@@ -341,7 +341,7 @@ public final class Application implements Navigation {
         submit(() -> {
             // These are separate writes: SQLite may commit even if the text append fails afterward.
             // Database and ShiftLogStore both recognize a repeated run ID on retry.
-            Progress loaded = database.saveRun(profile, run, pendingSecretCompletion);
+            Progress loaded = database.saveRun(profile, run);
             shiftLog.append(profile, run);
             return loaded;
         }, loaded -> {
@@ -354,7 +354,6 @@ public final class Application implements Navigation {
             else if (nextNightAfterSecret != 0) {
                 int next = nextNightAfterSecret;
                 nextNightAfterSecret = 0;
-                pendingSecretCompletion = false;
                 secretPanel = null;
                 startNight(next);
             }
@@ -362,6 +361,8 @@ public final class Application implements Navigation {
             savingRun = false;
             quitAfterSave = menuAfterSave = false;
             resultPanel.failed();
+            // Secret results are normally hidden; show the retry controls if saving failed.
+            if (nextNightAfterSecret != 0) show(resultPanel);
             error("Could not fully save this attempt. Retry from the result screen.\nRetries do not create duplicate records.", error);
         });
     }

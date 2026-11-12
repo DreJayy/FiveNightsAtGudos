@@ -1,73 +1,303 @@
 package com.gudos.ui;
 
+import com.gudos.audio.Sound;
 import com.gudos.game.SecretGame;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.util.Random;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
-/** Java2D pixel-art presentation of the hidden platformer. */
+/** A deliberately low-resolution arcade screen, painted entirely with Java2D. */
 public final class SecretPanel extends ScenePanel {
     private final SecretGame game;
     private final Consumer<Boolean> finished;
-    private boolean left, right, jump, action, paused, reported;
+    private final Consumer<Sound> sound;
+    private final BooleanSupplier reducedEffects;
+    private final BufferedImage pixels = new BufferedImage(320, 180, BufferedImage.TYPE_INT_RGB);
+    private boolean left, right, jump, action, paused, reported, facingRight = true;
+    private double animation, walk, transitionTime;
+    private static final double FREEZE_SECONDS = 0.7;
+    private static final double TRANSITION_SECONDS = 1.7;
 
-    public SecretPanel(SecretGame game, Consumer<Boolean> finished) {
-        this.game = game; this.finished = finished;
+    public SecretPanel(SecretGame game, Consumer<Boolean> finished, Consumer<Sound> sound, BooleanSupplier reducedEffects) {
+        this.game = game; this.finished = finished; this.sound = sound; this.reducedEffects = reducedEffects;
         bind("pressed A", "left", () -> left = true); bind("released A", "left-up", () -> left = false);
         bind("pressed LEFT", "arrow-left", () -> left = true); bind("released LEFT", "arrow-left-up", () -> left = false);
         bind("pressed D", "right", () -> right = true); bind("released D", "right-up", () -> right = false);
         bind("pressed RIGHT", "arrow-right", () -> right = true); bind("released RIGHT", "arrow-right-up", () -> right = false);
-        bind("pressed SPACE", "jump", () -> { if (!jump && !paused) game.jump(); jump = true; });
+        bind("pressed SPACE", "jump", () -> {
+            if (!jump && !paused && game.state() == SecretGame.State.PLAYING && game.grounded()) { game.jump(); sound.accept(Sound.SECRET_JUMP); }
+            jump = true;
+        });
         bind("released SPACE", "jump-up", () -> jump = false);
-        bind("pressed E", "action", () -> { if (!action && !paused) game.action(); action = true; });
+        bind("pressed E", "action", () -> {
+            if (!action && !paused) {
+                boolean wasCarrying = game.carrying();
+                game.action();
+                if (!wasCarrying && game.carrying()) sound.accept(Sound.SECRET_PICKUP);
+            }
+            action = true;
+        });
         bind("released E", "action-up", () -> action = false);
         bind("pressed ESCAPE", "pause", () -> { paused = !paused; release(); });
     }
+
     public void pause() { paused = true; release(); }
     private void release() { left = right = jump = action = false; }
+
     @Override public void tick(double seconds) {
         super.tick(seconds);
-        if (!paused) game.update(seconds, left, right);
-        if (!reported && game.state() != SecretGame.State.PLAYING) {
-            reported = true; finished.accept(game.state() == SecretGame.State.WON);
+        if (!paused && game.state() == SecretGame.State.PLAYING) {
+            double before = game.x();
+            game.update(seconds, left, right);
+            animation += seconds;
+            if (game.x() != before) { facingRight = game.x() > before; walk += seconds; }
+        }
+        // On either outcome, freeze the last frame before showing the tracking lines.
+        // Application then saves the result and restarts the same night.
+        if (!paused && game.state() != SecretGame.State.PLAYING) transitionTime += seconds;
+        if (!reported && game.state() != SecretGame.State.PLAYING && transitionTime >= TRANSITION_SECONDS) {
+            reported = true;
+            finished.accept(game.state() == SecretGame.State.WON);
         }
     }
-    @Override protected void render(Graphics2D g) {
-        g.setColor(new Color(23, 21, 25)); g.fillRect(0, 0, WIDTH, HEIGHT);
-        g.setColor(new Color(52, 45, 40)); g.fillRect(0, 180, WIDTH, 460);
-        for (int i = 0; i < WIDTH; i += 80) { g.setColor(new Color(61, 53, 47)); g.drawRect(i, 180, 80, 460); }
-        g.setColor(new Color(95, 84, 69)); g.fillRect(0, 640, WIDTH, 80);
-        g.setColor(new Color(189, 178, 142)); g.fillRect(105, 225, 90, 110);
-        Theme.text(g, "MISSING", 110, 250, Theme.pixel(22), Color.BLACK);
-        Theme.text(g, "LAST SEEN", 110, 290, Theme.pixel(18), Color.BLACK);
-        Theme.text(g, "AFTER HOURS", 110, 315, Theme.pixel(17), Color.BLACK);
-        g.setColor(new Color(48, 37, 34)); g.fill(game.level().destination());
-        Theme.text(g, "STOCKROOM", 1080, 510, Theme.pixel(25), Theme.PAPER);
-        for (Rectangle p : game.level().platforms()) { g.setColor(new Color(126, 100, 71)); g.fill(p); }
-        for (Rectangle c : game.level().cover()) {
-            g.setColor(new Color(79, 64, 51)); g.fill(c);
-            g.setColor(new Color(137, 111, 79)); g.draw(c);
-            Theme.text(g, "SHELF", c.x + 8, c.y + 25, Theme.pixel(20), Theme.PAPER);
+
+    @Override protected void render(Graphics2D screen) {
+        Graphics2D g = pixels.createGraphics();
+        // Render the full game to 320x180, then enlarge without smoothing: every pixel stays crisp.
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+        g.scale(.25, .25);
+        // The camera follows Gudo across the wider level; HUD and static stay fixed on screen.
+        int camera = (int) Math.max(0, Math.min(game.level().width() - WIDTH, game.x() - WIDTH / 2.0));
+        Graphics2D world = (Graphics2D) g.create();
+        world.translate(-camera, 0);
+        drawRoom(world);
+        drawWorld(world);
+        world.dispose();
+        drawHud(g);
+        g.dispose();
+        screen.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+        screen.drawImage(pixels, 0, 0, WIDTH, HEIGHT, null);
+    }
+
+    private void drawRoom(Graphics2D g) {
+        int width = game.level().width();
+        g.setColor(new Color(10, 10, 19)); g.fillRect(0, 0, width, HEIGHT);
+        g.setColor(new Color(43, 46, 39)); g.fillRect(0, 155, width, 485);
+        // Faded green walls and worn lower tiles echo the game's dining room and kitchen.
+        for (int row = 0; row < 6; row++) for (int col = -1; col < width / 128 + 2; col++) {
+            int x = col * 128 + (row % 2) * 64, y = 160 + row * 80;
+            g.setColor(row < 3 ? new Color(64, 68, 55) : new Color(49, 58, 49)); g.fillRect(x + 4, y + 4, 120, 72);
+            g.setColor(new Color(83, 82, 65)); g.fillRect(x + 8, y + 8, 112, 4);
         }
-        int wx = (int) game.witnessX();
-        g.setColor(new Color(250, 220, 120, 45));
-        int direction = game.witnessRight() ? 1 : -1;
-        // Match the highlighted area to the simulation's actual witness detection region.
-        g.fillRect(direction > 0 ? wx : wx - 200, 500, 200, 140);
-        pixelPerson(g, wx, 570, new Color(120, 149, 150));
-        pixelPerson(g, (int) game.x(), (int) game.y(), new Color(160, 75, 64));
+        g.setColor(new Color(20, 20, 29)); g.fillRect(0, 185, width, 12); g.fillRect(0, 212, width, 8);
+        for (int x = 546; x < width; x += 800) {
+            g.setColor(new Color(123, 109, 86)); g.fillRect(x, 205, 190, 12);
+            g.setColor(new Color(198, 183, 132)); g.fillRect(x + 20, 217, 150, 8);
+        }
+        g.setColor(new Color(48, 46, 39)); g.fillRect(0, 640, width, 80);
+        for (int x = 0; x < width; x += 64) { g.setColor(new Color(85, 79, 65)); g.fillRect(x, 640, 60, 8); g.fillRect(x + 24, 682, 4, 38); }
+        drawCarinderiaDetails(g);
+        // A small clue instead of an explicit explanation of the story.
+        g.setColor(new Color(163, 151, 118)); g.fillRect(112, 255, 68, 92);
+        g.setColor(new Color(49, 39, 41)); g.fillRect(124, 270, 44, 5); g.fillRect(136, 282, 20, 24); g.fillRect(124, 314, 44, 4); g.fillRect(128, 326, 36, 4);
+        g.setColor(new Color(18, 15, 24)); g.fill(game.level().destination());
+        g.setColor(new Color(110, 82, 65)); g.draw(game.level().destination());
+        Rectangle door = game.level().destination();
+        g.setColor(new Color(172, 146, 99)); g.fillRect(door.x + 15, door.y + 23, 70, 8);
+        Theme.text(g, "STOCKROOM", door.x - 32, door.y - 5, Theme.pixel(25), new Color(207, 185, 143));
+        for (Rectangle p : game.level().platforms()) {
+            g.setColor(new Color(85, 65, 62)); g.fill(p);
+            g.setColor(new Color(158, 120, 87)); g.fillRect(p.x, p.y, p.width, 5);
+        }
+    }
+
+    /** Background-only landmarks inspired by the dining room, serving counter and kitchen feeds. */
+    private void drawCarinderiaDetails(Graphics2D g) {
+        // The side-view connects the existing dining room, counter, kitchen and stockroom feeds.
+        // Partitions mark the transitions without blocking the player's one-dimensional path.
+        for (int x : new int[]{800, 1600, 2280}) {
+            g.setColor(new Color(31, 35, 30)); g.fillRect(x, 220, 32, 360);
+            g.setColor(new Color(100, 102, 80)); g.fillRect(x + 4, 225, 8, 330);
+        }
+        // Dining area: green tablecloth, plastic chairs, menu board and outside window.
+        g.setColor(new Color(41, 39, 33)); g.fillRect(180, 230, 260, 90);
+        g.setColor(new Color(157, 130, 76)); g.fillRect(188, 238, 244, 74);
+        for (int x = 204; x < 420; x += 48) { g.setColor(new Color(98, 70, 49)); g.fillOval(x, 250, 28, 28); g.setColor(new Color(217, 190, 130)); g.fillRect(x + 4, 286, 20, 4); }
+        g.setColor(new Color(38, 44, 36)); g.fillRect(70, 490, 210, 16);
+        g.setColor(new Color(88, 116, 75)); g.fillRect(78, 478, 194, 20);
+        g.setColor(new Color(143, 158, 112)); for (int x = 86; x < 260; x += 32) g.fillRect(x, 482, 8, 8);
+        g.setColor(new Color(126, 122, 103)); g.fillRect(82, 506, 12, 74); g.fillRect(246, 506, 12, 74);
+        g.setColor(new Color(23, 26, 27)); g.fillRect(505, 250, 190, 165);
+        g.setColor(new Color(66, 71, 60)); g.fillRect(512, 257, 176, 151);
+        g.setColor(new Color(20, 28, 31)); g.fillRect(520, 265, 160, 135);
+        g.setColor(new Color(151, 117, 70)); g.fillRect(606, 290, 4, 20); g.fillRect(570, 340, 12, 4);
+        g.setColor(new Color(69, 75, 61)); g.fillRect(594, 265, 8, 135); g.fillRect(520, 325, 160, 8);
+        // Plastic chairs from the dining camera sit around the cloth-covered table.
+        g.setColor(new Color(140, 145, 122)); g.fillRect(40, 505, 28, 8); g.fillRect(40, 505, 8, 60); g.fillRect(40, 545, 40, 8);
+        g.fillRect(270, 505, 28, 8); g.fillRect(290, 505, 8, 60); g.fillRect(258, 545, 40, 8);
+        // The glass-front serving counter has lit metal trays, like the counter camera.
+        g.setColor(new Color(36, 35, 29)); g.fillRect(850, 348, 320, 182);
+        g.setColor(new Color(125, 110, 81)); g.fillRect(858, 356, 304, 8); g.fillRect(858, 430, 304, 8);
+        g.setColor(new Color(66, 80, 69)); g.fillRect(864, 364, 292, 60);
+        for (int x = 874; x < 1150; x += 60) {
+            g.setColor(new Color(163, 155, 130)); g.fillRect(x, 398, 50, 16);
+            g.setColor(new Color(151, 106, 55)); g.fillRect(x + 4, 398, 42, 8);
+        }
+        g.setColor(new Color(124, 118, 98)); g.fillRect(850, 530, 320, 22);
+        // Counter CCTV monitor and condiment bottles.
+        g.setColor(new Color(22, 24, 24)); g.fillRect(1250, 390, 94, 70);
+        g.setColor(new Color(79, 107, 95)); g.fillRect(1258, 398, 78, 52);
+        g.setColor(new Color(151, 162, 137)); g.fillRect(1292, 405, 4, 38); g.fillRect(1264, 424, 64, 4);
+        g.setColor(new Color(108, 53, 43)); g.fillRect(1370, 440, 12, 28);
+        g.setColor(new Color(166, 137, 80)); g.fillRect(1388, 440, 12, 28);
+        // Kitchen hood, pots and prep counter lead into the stockroom.
+        g.setColor(new Color(37, 39, 35)); g.fillRect(1640, 270, 360, 80);
+        g.setColor(new Color(116, 115, 99)); g.fillRect(1652, 338, 336, 12);
+        for (int x = 1680; x < 1960; x += 60) {
+            g.setColor(new Color(142, 139, 116)); g.fillRect(x, 352, 4, 34); g.fillRect(x - 8, 384, 24, 28);
+            g.setColor(new Color(60, 64, 55)); g.fillRect(x - 4, 388, 16, 20);
+        }
+        g.setColor(new Color(91, 95, 84)); g.fillRect(1650, 480, 330, 22);
+        g.setColor(new Color(46, 48, 42)); g.fillRect(1660, 502, 310, 64);
+        // Stacked rice sacks and bottles at the stockroom end of the route.
+        g.setColor(new Color(137, 132, 110));
+        for (int row = 0; row < 3; row++) g.fillRect(2310 + row * 8, 462 + row * 28, 100, 24);
+        g.setColor(new Color(76, 88, 75));
+        for (int x = 2140; x < 2240; x += 20) { g.fillRect(x + 4, 405, 8, 8); g.fillRect(x, 413, 16, 28); }
+    }
+
+    private void drawWorld(Graphics2D g) {
+        // Every light uses the exact polygon that the simulation checks for detection.
+        for (int i = 0; i < game.witnessCount(); i++) {
+            g.setColor(new Color(218, 196, 120, 75)); g.fill(game.witnessBeam(i));
+        }
+        person(g, (int) game.x(), (int) game.y(), facingRight, (int) (walk * 7) % 2, true, !game.grounded());
         int bx = game.carrying() ? (int) game.x() + 20 : (int) game.bundleX();
         int by = game.carrying() ? (int) game.y() + 42 : (int) game.bundleY();
-        g.setColor(new Color(202, 191, 164)); g.fillRect(bx, by, 32, 20);
-        g.setColor(new Color(105, 85, 76)); g.drawLine(bx + 4, by + 9, bx + 28, by + 9);
-        Theme.text(g, "SIR GUDO  /  AFTER HOURS", 30, 48, Theme.pixel(34), Theme.PAPER);
-        Theme.text(g, game.started() ? "TIME: " + (int) Math.ceil(game.remaining()) : "TIME: --", 1030, 48, Theme.pixel(34), Theme.PAPER);
-        Theme.text(g, "A/D OR ARROWS: MOVE   SPACE: JUMP   E: PICK UP / DROP / DELIVER   ESC: PAUSE", 30, 90, Theme.pixel(24), Theme.PAPER);
-        Theme.text(g, "KEEP THE BUNDLE OUT OF THE WITNESS'S LIGHT.", 30, 120, Theme.pixel(24), Theme.PAPER);
-        if (paused) Theme.text(g, "PAUSED - PRESS ESC", 450, 350, Theme.pixel(50), Color.WHITE);
+        bundle(g, bx, by);
+        // Shelves are in the foreground: Gudo and the bundle visibly pass behind them.
+        // The tinted openings leave them visible enough to navigate while communicating cover.
+        int coverIndex = 0;
+        for (Rectangle c : game.level().cover()) {
+            g.setColor(new Color(32, 34, 28, 150)); g.fill(c);
+            int kind = coverIndex++ % 3;
+            g.setColor(kind == 0 ? new Color(107, 98, 75) : kind == 1 ? new Color(121, 121, 104) : new Color(112, 82, 58));
+            g.fillRect(c.x, c.y, c.width, 8);
+            g.fillRect(c.x, c.y, 8, c.height); g.fillRect(c.x + c.width - 8, c.y, 8, c.height);
+            g.fillRect(c.x, c.y + 45, c.width, 8); g.fillRect(c.x, c.y + c.height - 14, c.width, 14);
+            if (kind == 0) { // A stocked metal rack.
+                g.setColor(new Color(157, 146, 110));
+                for (int x = c.x + 16; x < c.x + c.width - 24; x += 32) g.fillRect(x, c.y + 14, 20, 28);
+            } else if (kind == 1) { // A kitchen prep cart with pots and utensils.
+                g.setColor(new Color(183, 179, 148));
+                g.fillRect(c.x + 20, c.y + 24, 40, 18); g.fillRect(c.x + 28, c.y + 16, 24, 8);
+                g.fillRect(c.x + 94, c.y + 16, 24, 26);
+            } else { // Wooden delivery crates behind the counter.
+                g.setColor(new Color(151, 112, 75));
+                g.fillRect(c.x + 12, c.y + 10, 56, 32); g.fillRect(c.x + 82, c.y + 10, 56, 32);
+                g.setColor(new Color(75, 54, 45));
+                g.drawLine(c.x + 12, c.y + 10, c.x + 68, c.y + 42);
+                g.drawLine(c.x + 82, c.y + 42, c.x + 138, c.y + 10);
+            }
+            Theme.text(g, "COVER", c.x + 48, c.y + 76, Theme.pixel(22), new Color(224, 204, 152));
+        }
+        // Witnesses patrol in front of the cover while Gudo can stand behind it.
+        for (int i = 0; i < game.witnessCount(); i++) {
+            person(g, (int) game.witnessX(i), 570, game.witnessRight(i), (int) (animation * 5 + i) % 2, false, false);
+        }
+        if (game.started() && game.bundleHidden()) {
+            int bxCenter = game.carrying() ? (int) game.x() + 20 : (int) game.bundleX() + 12;
+            int byCenter = game.carrying() ? (int) game.y() + 48 : (int) game.bundleY() + 10;
+            Theme.text(g, "HIDDEN", bxCenter - 24, byCenter - 44, Theme.pixel(22), new Color(155, 211, 145));
+        }
     }
-    private static void pixelPerson(Graphics2D g, int x, int y, Color shirt) {
-        g.setColor(new Color(191, 153, 124)); g.fillRect(x + 9, y, 22, 20);
-        g.setColor(shirt); g.fillRect(x + 5, y + 20, 30, 29);
-        g.setColor(new Color(25, 24, 28)); g.fillRect(x + 5, y + 49, 10, 21); g.fillRect(x + 25, y + 49, 10, 21);
+
+    private void person(Graphics2D g, int x, int y, boolean right, int step, boolean gudo, boolean airborne) {
+        Graphics2D s = (Graphics2D) g.create();
+        s.translate(x + (right ? 0 : 40), y);
+        if (!right) s.scale(-1, 1);
+        // The legs and arms alternate independently; an airborne pose clearly reads as a jump.
+        Color dark = new Color(20, 18, 27), skin = new Color(193, 147, 112);
+        Color clothing = gudo ? new Color(57, 111, 62) : new Color(71, 112, 112);
+        s.setColor(dark); s.fillRect(4, 0, 32, 28); s.fillRect(8, 28, 24, 24);
+        s.setColor(skin); s.fillRect(8, 8, 24, 20);
+        // Reference: short, tapered sides and a textured, mostly flat top, not a rounded cap.
+        s.setColor(gudo ? new Color(26, 22, 23) : new Color(40, 37, 38));
+        if (gudo) {
+            s.fillRect(4, 0, 32, 8); s.fillRect(4, 8, 8, 12); s.fillRect(28, 8, 4, 4);
+            s.fillRect(8, -4, 8, 4); s.fillRect(20, -4, 12, 4); s.fillRect(32, 0, 4, 4);
+            s.setColor(new Color(55, 45, 42)); s.fillRect(12, 0, 4, 4); s.fillRect(24, 0, 4, 4);
+        }
+        else s.fillRect(8, 4, 24, 8);
+        s.setColor(dark); s.fillRect(16, 16, 4, 4); s.fillRect(26, 16, 4, 4);
+        if (gudo) { s.setColor(new Color(211, 203, 186)); s.fillRect(19, 24, 10, 3); }
+        s.setColor(clothing); s.fillRect(8, 28, 24, 24); s.fillRect(step == 0 ? 4 : 8, 32, 6, 18);
+        // Dark shirt under an open green jacket, with a narrow zipper/lapel on each side.
+        s.setColor(gudo ? new Color(29, 40, 32) : new Color(109, 144, 143)); s.fillRect(12, 32, 16, 16);
+        if (gudo) { s.setColor(new Color(105, 151, 88)); s.fillRect(8, 32, 4, 16); s.fillRect(28, 32, 4, 16); }
+        s.setColor(dark);
+        int stride = airborne ? 4 : (step == 0 ? 3 : -3);
+        s.fillRect(9 + stride, 52, 8, 13); s.fillRect(23 - stride, 52, 8, 13);
+        s.setColor(new Color(5, 5, 9)); s.fillRect(9 + stride, 64, 9, 6); s.fillRect(23 - stride, 64, 9, 6);
+        s.dispose();
+    }
+
+    private void bundle(Graphics2D g, int x, int y) {
+        // The 72-unit horizontal silhouette is about as long as a standing person's 70-unit
+        // height. Keep the model anchor unchanged so drawing does not change cover detection.
+        x -= 24; y -= 8;
+        // Dark outline gives the head, neck, shoulders and wrapped legs a readable silhouette.
+        g.setColor(new Color(31, 27, 29));
+        g.fillRect(x, y + 8, 16, 20); g.fillRect(x + 16, y + 12, 8, 12);
+        g.fillRect(x + 24, y + 4, 24, 28); g.fillRect(x + 48, y + 8, 16, 24);
+        g.fillRect(x + 64, y + 8, 8, 8); g.fillRect(x + 64, y + 24, 8, 8);
+        // Pale cloth covers the whole body; dark bindings and staggered folds read as wrapping.
+        g.setColor(new Color(185, 174, 148));
+        g.fillRect(x + 4, y + 8, 12, 16); g.fillRect(x + 16, y + 12, 8, 8);
+        g.fillRect(x + 24, y + 8, 24, 20); g.fillRect(x + 48, y + 12, 16, 16);
+        g.fillRect(x + 64, y + 12, 8, 4); g.fillRect(x + 64, y + 24, 8, 4);
+        g.setColor(new Color(226, 216, 188));
+        g.fillRect(x + 4, y + 8, 8, 4); g.fillRect(x + 24, y + 8, 20, 4);
+        g.fillRect(x + 28, y + 16, 16, 4); g.fillRect(x + 52, y + 12, 12, 4);
+        g.setColor(new Color(100, 80, 70));
+        g.fillRect(x + 8, y + 12, 4, 12); // Cloth binding across the head.
+        g.fillRect(x + 28, y + 8, 4, 20); g.fillRect(x + 40, y + 8, 4, 20);
+        g.fillRect(x + 56, y + 12, 4, 16);
+    }
+
+    private void drawHud(Graphics2D g) {
+        g.setColor(new Color(7, 7, 12)); g.fillRect(0, 0, WIDTH, 145);
+        Color white = new Color(220, 209, 174), red = new Color(204, 86, 76);
+        Theme.text(g, "AFTER HOURS", 36, 50, Theme.pixel(40), white);
+        Theme.text(g, game.started() ? "TIME " + (int) Math.ceil(game.remaining()) : "TIME --", 1030, 50, Theme.pixel(36), red);
+        Theme.text(g, "A/D MOVE   SPACE JUMP   E PICK UP / DROP   ESC PAUSE", 36, 92, Theme.pixel(26), white);
+        Theme.text(g, "HIDE THE BUNDLE BEHIND COVER; E AT STOCKROOM TO DELIVER", 36, 125, Theme.pixel(24), new Color(198, 190, 165));
+        if (!reducedEffects.getAsBoolean()) {
+            // A reproducible frame-seeded noise field and rolling band evoke an unstable CRT.
+            Random noise = new Random((long) (animation * 12));
+            g.setColor(new Color(210, 212, 195, 24));
+            for (int i = 0; i < 190; i++) g.fillRect(noise.nextInt(WIDTH / 4) * 4, noise.nextInt(HEIGHT / 4) * 4, 4, 4);
+            g.setColor(new Color(220, 224, 210, 18)); g.fillRect(0, (int) (animation * 70) % HEIGHT, WIDTH, 12);
+            g.setColor(new Color(0, 0, 0, 40));
+            for (int y = 0; y < HEIGHT; y += 8) g.fillRect(0, y, WIDTH, 4);
+        }
+        if (paused) {
+            g.setColor(new Color(0, 0, 0, 190)); g.fillRect(360, 285, 560, 100);
+            Theme.text(g, "PAUSED - PRESS ESC", 425, 350, Theme.pixel(48), white);
+        }
+        if (game.state() != SecretGame.State.PLAYING && transitionTime >= FREEZE_SECONDS) {
+            // White tracking lines appear after the freeze; reduced-effects keeps them still and dim.
+            int frame = reducedEffects.getAsBoolean() ? 0 : (int) ((transitionTime - FREEZE_SECONDS) * 14);
+            Random lines = new Random(frame + 71L);
+            g.setColor(new Color(245, 245, 235, reducedEffects.getAsBoolean() ? 100 : 200));
+            for (int i = 0; i < 16; i++) {
+                int y = lines.nextInt(HEIGHT / 4) * 4;
+                int x = lines.nextInt(WIDTH / 4) * 4;
+                g.fillRect(x, y, 60 + lines.nextInt(120) * 4, 4);
+            }
+        }
     }
 }

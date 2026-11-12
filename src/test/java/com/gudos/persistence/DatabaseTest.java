@@ -83,23 +83,40 @@ class DatabaseTest {
         assertFalse(progress.unlocked(6));
     }
 
-    @Test void secretCompletionIsAtomicPersistentAndSpecificToProfile() throws Exception {
+    @Test void secretAttemptsRemainRecordedWithoutCompletingTheNight() throws Exception {
         GameSession failed = new GameSession(1);
         failed.failSecret();
         database.saveRun("Player", failed.result());
-        assertFalse(database.secretCompleted("Player"));
         assertEquals(Outcome.MINIGAME_FAILED, database.loadRuns("Player").get(0).outcome());
         assertEquals(1, database.loadProgress("Player").nextNight());
 
         GameSession won = new GameSession(1);
         won.completeSecret();
-        database.saveRun("Player", won.result(), true);
-        database.saveRun("Player", won.result(), true);
+        database.saveRun("Player", won.result());
+        database.saveRun("Player", won.result());
         Database reopened = new Database(directory.resolve("test.db"));
-        assertTrue(reopened.secretCompleted("player"));
-        assertFalse(reopened.secretCompleted("Other"));
-        assertEquals(2, reopened.loadProgress("Player").nextNight());
+        assertEquals(1, reopened.loadProgress("Player").nextNight());
+        assertEquals(0, reopened.loadProgress("Player").completedRuns());
+        assertEquals(Outcome.MINIGAME_COMPLETED, won.result().outcome());
         assertEquals(2, reopened.loadRuns("Player").size());
+        assertTrue(reopened.loadRuns("Player").contains(won.result()));
+    }
+
+    @Test void legacyProfileWideSecretFlagIsPreservedWithoutGuessingANight() throws Exception {
+        Path file = directory.resolve("version3.db");
+        Database old = new Database(file);
+        old.loadProgress("Veteran");
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + file.toAbsolutePath()); var sql = connection.createStatement()) {
+            sql.execute("CREATE TABLE secret_completions (profile_id INTEGER PRIMARY KEY REFERENCES profiles(id))");
+            sql.execute("INSERT INTO secret_completions SELECT id FROM profiles WHERE name='Veteran'");
+            sql.execute("PRAGMA user_version=3");
+        }
+        Database migrated = new Database(file);
+        assertEquals(Progress.EMPTY, migrated.loadProgress("Veteran"));
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + file.toAbsolutePath());
+             var sql = connection.createStatement(); var rows = sql.executeQuery("SELECT COUNT(*) FROM secret_completions")) {
+            assertEquals(1, rows.getInt(1));
+        }
     }
 
     @Test void migratesVersionTwoRunsBeforeSavingASecretFailure() throws Exception {
