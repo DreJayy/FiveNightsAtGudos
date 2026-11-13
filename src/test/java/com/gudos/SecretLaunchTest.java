@@ -59,7 +59,7 @@ class SecretLaunchTest {
             assertEquals(6, level.cover().size());
             assertEquals(3, level.patrols().size());
             var game = new SecretGame(level);
-            var panel = new SecretPanel(game, won -> { }, sound -> { }, () -> false);
+            var panel = new SecretPanel(game, won -> { }, sound -> { }, () -> { }, () -> false);
             panel.setSize(1280, 720);
             panel.tick(0.033);
             var image = new java.awt.image.BufferedImage(1280, 720, java.awt.image.BufferedImage.TYPE_INT_RGB);

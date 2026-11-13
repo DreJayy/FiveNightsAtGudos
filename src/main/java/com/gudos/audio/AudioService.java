@@ -37,6 +37,7 @@ public final class AudioService implements AutoCloseable {
         if (clip != null) return clip;
         // Decorator (Java library): BufferedInputStream wraps an InputStream and adds buffering
         // while remaining an InputStream. AudioSystem then interprets the buffered audio data.
+        // A null path identifies a synthesized minigame sound; other sounds use bundled WAVs.
         try (AudioInputStream stream = sound.path() == null ? Chiptune.create(sound)
                 : AudioSystem.getAudioInputStream(new BufferedInputStream(AssetManager.resource(sound.path())))) {
             clip = AudioSystem.getClip();
@@ -83,9 +84,15 @@ public final class AudioService implements AutoCloseable {
         });
     }
 
+    /** Stop music, ambience and any playing one-shots, in audio-worker order. */
+    public void stopAll() {
+        executor.execute(() -> clips.values().forEach(Clip::stop));
+    }
+
     // Replace the current background loops. Null stops them without starting a replacement.
     public void ambience(Sound sound) {
         executor.execute(() -> {
+            // Stop every known background loop before starting the requested scene's ambience.
             for (Sound loop : new Sound[]{Sound.HUM, Sound.FAN, Sound.MENU_MUSIC, Sound.MENU_STATIC, Sound.SECRET_AMBIENCE}) {
                 Clip old = clips.get(loop);
                 if (old != null) old.stop();

@@ -8,24 +8,30 @@ import java.util.Random;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
-/** A deliberately low-resolution arcade screen, painted entirely with Java2D. */
+/**
+ * Swing view/controller for SecretGame. It translates input into model actions and draws
+ * the model; Application owns the window, audio service, shift records and navigation.
+ */
 public final class SecretPanel extends ScenePanel {
     private final SecretGame game;
     private final Consumer<Boolean> finished;
     private final Consumer<Sound> sound;
+    private final Runnable silence;
     private final BooleanSupplier reducedEffects;
-    private final BufferedImage pixels = new BufferedImage(320, 180, BufferedImage.TYPE_INT_RGB);
-    private boolean left, right, jump, action, paused, reported, facingRight = true;
+    // The off-screen image is enlarged using nearest-neighbor interpolation for crisp pixel art.
+    private final BufferedImage pixels = new BufferedImage(640, 360, BufferedImage.TYPE_INT_RGB);
+    // Held-key flags prevent auto-repeat from causing repeated jumps/actions while a key is down.
+    private boolean left, right, jump, action, paused, reported, outcomeSilenced, facingRight = true;
     private double animation, walk, transitionTime;
-    private static final double FREEZE_SECONDS = 0.7;
-    private static final double TRANSITION_SECONDS = 1.7;
+    private static final double TRANSITION_SECONDS = 3.0;
 
-    public SecretPanel(SecretGame game, Consumer<Boolean> finished, Consumer<Sound> sound, BooleanSupplier reducedEffects) {
-        this.game = game; this.finished = finished; this.sound = sound; this.reducedEffects = reducedEffects;
+    public SecretPanel(SecretGame game, Consumer<Boolean> finished, Consumer<Sound> sound, Runnable silence, BooleanSupplier reducedEffects) {
+        this.game = game; this.finished = finished; this.sound = sound; this.silence = silence; this.reducedEffects = reducedEffects;
         bind("pressed A", "left", () -> left = true); bind("released A", "left-up", () -> left = false);
         bind("pressed LEFT", "arrow-left", () -> left = true); bind("released LEFT", "arrow-left-up", () -> left = false);
         bind("pressed D", "right", () -> right = true); bind("released D", "right-up", () -> right = false);
         bind("pressed RIGHT", "arrow-right", () -> right = true); bind("released RIGHT", "arrow-right-up", () -> right = false);
+        // Play the jump sound only when the grounded model actually accepts a jump.
         bind("pressed SPACE", "jump", () -> {
             if (!jump && !paused && game.state() == SecretGame.State.PLAYING && game.grounded()) { game.jump(); sound.accept(Sound.SECRET_JUMP); }
             jump = true;
@@ -33,9 +39,11 @@ public final class SecretPanel extends ScenePanel {
         bind("released SPACE", "jump-up", () -> jump = false);
         bind("pressed E", "action", () -> {
             if (!action && !paused) {
+                // Comparing before/after distinguishes a pickup from a drop, delivery or missed press.
                 boolean wasCarrying = game.carrying();
                 game.action();
                 if (!wasCarrying && game.carrying()) sound.accept(Sound.SECRET_PICKUP);
+                silenceOnOutcome();
             }
             action = true;
         });
@@ -43,8 +51,17 @@ public final class SecretPanel extends ScenePanel {
         bind("pressed ESCAPE", "pause", () -> { paused = !paused; release(); });
     }
 
+    // Also called on window focus loss; clearing held keys prevents movement after focus returns.
     public void pause() { paused = true; release(); }
     private void release() { left = right = jump = action = false; }
+
+    private void silenceOnOutcome() {
+        // Run once for both timeout/capture (detected during tick) and delivery (detected on E).
+        if (!outcomeSilenced && game.state() != SecretGame.State.PLAYING) {
+            outcomeSilenced = true;
+            silence.run();
+        }
+    }
 
     @Override public void tick(double seconds) {
         super.tick(seconds);
@@ -52,11 +69,13 @@ public final class SecretPanel extends ScenePanel {
             double before = game.x();
             game.update(seconds, left, right);
             animation += seconds;
+            // Animate walking only when Gudo actually moves; keep the last facing direction when idle.
             if (game.x() != before) { facingRight = game.x() > before; walk += seconds; }
         }
-        // On either outcome, freeze the last frame before showing the tracking lines.
-        // Application then saves the result and restarts the same night.
+        silenceOnOutcome();
+        // Freeze the final frame with the disruption lines for three seconds; then restart.
         if (!paused && game.state() != SecretGame.State.PLAYING) transitionTime += seconds;
+        // Report only once so Application saves one shift attempt, even if more frames are painted.
         if (!reported && game.state() != SecretGame.State.PLAYING && transitionTime >= TRANSITION_SECONDS) {
             reported = true;
             finished.accept(game.state() == SecretGame.State.WON);
@@ -65,21 +84,30 @@ public final class SecretPanel extends ScenePanel {
 
     @Override protected void render(Graphics2D screen) {
         Graphics2D g = pixels.createGraphics();
-        // Render the full game to 320x180, then enlarge without smoothing: every pixel stays crisp.
+        // A 640x360 pixel canvas retains crisp retro scaling while allowing facial/hair details.
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
-        g.scale(.25, .25);
+        g.scale(.5, .5);
         // The camera follows Gudo across the wider level; HUD and static stay fixed on screen.
         int camera = (int) Math.max(0, Math.min(game.level().width() - WIDTH, game.x() - WIDTH / 2.0));
+        // Use a separate graphics context so translating the world cannot move the HUD/white lines.
         Graphics2D world = (Graphics2D) g.create();
         world.translate(-camera, 0);
         drawRoom(world);
         drawWorld(world);
         world.dispose();
         drawHud(g);
+        if (game.state() != SecretGame.State.PLAYING) drawSignalLines(g);
         g.dispose();
         screen.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
         screen.drawImage(pixels, 0, 0, WIDTH, HEIGHT, null);
+    }
+
+    /** Fixed white tracking lines over the frozen scene; the positions never change per frame. */
+    private void drawSignalLines(Graphics2D g) {
+        g.setColor(new Color(255, 255, 255, reducedEffects.getAsBoolean() ? 150 : 230));
+        int[] rows = {48, 112, 196, 276, 344, 424, 504, 596, 672};
+        for (int y : rows) g.fillRect(0, y, WIDTH, 12);
     }
 
     private void drawRoom(Graphics2D g) {
@@ -170,6 +198,7 @@ public final class SecretPanel extends ScenePanel {
     }
 
     private void drawWorld(Graphics2D g) {
+        // Drawing order provides depth: beams, Gudo/bundle, foreground cover, then the witnesses.
         // Every light uses the exact polygon that the simulation checks for detection.
         for (int i = 0; i < game.witnessCount(); i++) {
             g.setColor(new Color(218, 196, 120, 75)); g.fill(game.witnessBeam(i));
@@ -183,6 +212,7 @@ public final class SecretPanel extends ScenePanel {
         int coverIndex = 0;
         for (Rectangle c : game.level().cover()) {
             g.setColor(new Color(32, 34, 28, 150)); g.fill(c);
+            // The three appearances share the same rectangular hiding rule in SecretGame.
             int kind = coverIndex++ % 3;
             g.setColor(kind == 0 ? new Color(107, 98, 75) : kind == 1 ? new Color(121, 121, 104) : new Color(112, 82, 58));
             g.fillRect(c.x, c.y, c.width, 8);
@@ -202,21 +232,16 @@ public final class SecretPanel extends ScenePanel {
                 g.drawLine(c.x + 12, c.y + 10, c.x + 68, c.y + 42);
                 g.drawLine(c.x + 82, c.y + 42, c.x + 138, c.y + 10);
             }
-            Theme.text(g, "COVER", c.x + 48, c.y + 76, Theme.pixel(22), new Color(224, 204, 152));
         }
         // Witnesses patrol in front of the cover while Gudo can stand behind it.
         for (int i = 0; i < game.witnessCount(); i++) {
             person(g, (int) game.witnessX(i), 570, game.witnessRight(i), (int) (animation * 5 + i) % 2, false, false);
         }
-        if (game.started() && game.bundleHidden()) {
-            int bxCenter = game.carrying() ? (int) game.x() + 20 : (int) game.bundleX() + 12;
-            int byCenter = game.carrying() ? (int) game.y() + 48 : (int) game.bundleY() + 10;
-            Theme.text(g, "HIDDEN", bxCenter - 24, byCenter - 44, Theme.pixel(22), new Color(155, 211, 145));
-        }
     }
 
     private void person(Graphics2D g, int x, int y, boolean right, int step, boolean gudo, boolean airborne) {
         Graphics2D s = (Graphics2D) g.create();
+        // Mirror the same pixel art when the character faces left instead of maintaining two sprites.
         s.translate(x + (right ? 0 : 40), y);
         if (!right) s.scale(-1, 1);
         // The legs and arms alternate independently; an airborne pose clearly reads as a jump.
@@ -227,9 +252,14 @@ public final class SecretPanel extends ScenePanel {
         // Reference: short, tapered sides and a textured, mostly flat top, not a rounded cap.
         s.setColor(gudo ? new Color(26, 22, 23) : new Color(40, 37, 38));
         if (gudo) {
-            s.fillRect(4, 0, 32, 8); s.fillRect(4, 8, 8, 12); s.fillRect(28, 8, 4, 4);
-            s.fillRect(8, -4, 8, 4); s.fillRect(20, -4, 12, 4); s.fillRect(32, 0, 4, 4);
-            s.setColor(new Color(55, 45, 42)); s.fillRect(12, 0, 4, 4); s.fillRect(24, 0, 4, 4);
+            // Short tapered sides and a fuller, textured top inspired by the supplied photo.
+            s.fillRect(4, 1, 30, 7); s.fillRect(7, -3, 26, 5);
+            s.fillRect(10, -6, 19, 4); s.fillRect(14, -8, 5, 3);
+            s.fillRect(25, -7, 5, 4); s.fillRect(32, 2, 3, 6);
+            s.setColor(new Color(54, 45, 42));
+            s.fillRect(4, 8, 4, 5); s.fillRect(6, 13, 3, 4); s.fillRect(29, 8, 3, 3);
+            s.setColor(new Color(78, 65, 58));
+            s.fillRect(10, -2, 3, 2); s.fillRect(17, -4, 4, 2); s.fillRect(26, -2, 4, 2);
         }
         else s.fillRect(8, 4, 24, 8);
         s.setColor(dark); s.fillRect(16, 16, 4, 4); s.fillRect(26, 16, 4, 4);
@@ -249,23 +279,23 @@ public final class SecretPanel extends ScenePanel {
         // The 72-unit horizontal silhouette is about as long as a standing person's 70-unit
         // height. Keep the model anchor unchanged so drawing does not change cover detection.
         x -= 24; y -= 8;
-        // Dark outline gives the head, neck, shoulders and wrapped legs a readable silhouette.
+        // A continuous shroud surrounds the head, shoulders and tapered legs.
         g.setColor(new Color(31, 27, 29));
-        g.fillRect(x, y + 8, 16, 20); g.fillRect(x + 16, y + 12, 8, 12);
-        g.fillRect(x + 24, y + 4, 24, 28); g.fillRect(x + 48, y + 8, 16, 24);
-        g.fillRect(x + 64, y + 8, 8, 8); g.fillRect(x + 64, y + 24, 8, 8);
-        // Pale cloth covers the whole body; dark bindings and staggered folds read as wrapping.
-        g.setColor(new Color(185, 174, 148));
-        g.fillRect(x + 4, y + 8, 12, 16); g.fillRect(x + 16, y + 12, 8, 8);
-        g.fillRect(x + 24, y + 8, 24, 20); g.fillRect(x + 48, y + 12, 16, 16);
-        g.fillRect(x + 64, y + 12, 8, 4); g.fillRect(x + 64, y + 24, 8, 4);
-        g.setColor(new Color(226, 216, 188));
-        g.fillRect(x + 4, y + 8, 8, 4); g.fillRect(x + 24, y + 8, 20, 4);
-        g.fillRect(x + 28, y + 16, 16, 4); g.fillRect(x + 52, y + 12, 12, 4);
-        g.setColor(new Color(100, 80, 70));
-        g.fillRect(x + 8, y + 12, 4, 12); // Cloth binding across the head.
-        g.fillRect(x + 28, y + 8, 4, 20); g.fillRect(x + 40, y + 8, 4, 20);
-        g.fillRect(x + 56, y + 12, 4, 16);
+        g.fillRect(x, y + 8, 16, 20); g.fillRect(x + 16, y + 8, 44, 24);
+        g.fillRect(x + 24, y + 4, 24, 28); g.fillRect(x + 60, y + 12, 12, 16);
+        g.setColor(new Color(180, 173, 155));
+        g.fillRect(x + 4, y + 8, 12, 16); g.fillRect(x + 16, y + 12, 44, 16);
+        g.fillRect(x + 24, y + 8, 24, 20); g.fillRect(x + 60, y + 16, 8, 8);
+        // Broad diagonal folds and a rope bind the cloth rather than looking like separate blocks.
+        g.setColor(new Color(225, 220, 202));
+        for (int fold : new int[]{4, 20, 36, 52}) {
+            g.fillRect(x + fold, y + 12, 8, 4);
+            g.fillRect(x + fold + 4, y + 16, 8, 4);
+            g.fillRect(x + fold + 8, y + 20, 4, 4);
+        }
+        g.setColor(new Color(100, 83, 72));
+        g.fillRect(x + 20, y + 12, 4, 16); g.fillRect(x + 40, y + 8, 4, 20);
+        g.fillRect(x + 60, y + 16, 4, 8);
     }
 
     private void drawHud(Graphics2D g) {
@@ -287,17 +317,6 @@ public final class SecretPanel extends ScenePanel {
         if (paused) {
             g.setColor(new Color(0, 0, 0, 190)); g.fillRect(360, 285, 560, 100);
             Theme.text(g, "PAUSED - PRESS ESC", 425, 350, Theme.pixel(48), white);
-        }
-        if (game.state() != SecretGame.State.PLAYING && transitionTime >= FREEZE_SECONDS) {
-            // White tracking lines appear after the freeze; reduced-effects keeps them still and dim.
-            int frame = reducedEffects.getAsBoolean() ? 0 : (int) ((transitionTime - FREEZE_SECONDS) * 14);
-            Random lines = new Random(frame + 71L);
-            g.setColor(new Color(245, 245, 235, reducedEffects.getAsBoolean() ? 100 : 200));
-            for (int i = 0; i < 16; i++) {
-                int y = lines.nextInt(HEIGHT / 4) * 4;
-                int x = lines.nextInt(WIDTH / 4) * 4;
-                g.fillRect(x, y, 60 + lines.nextInt(120) * 4, 4);
-            }
         }
     }
 }

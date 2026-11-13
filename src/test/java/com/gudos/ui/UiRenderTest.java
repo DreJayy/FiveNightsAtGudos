@@ -73,10 +73,10 @@ class UiRenderTest {
                         .destination(new Rectangle(1135, 510, 125, 130))
                         .platform(new Rectangle(420, 555, 100, 20))
                         .cover(new Rectangle(345, 500, 115, 140)).witness(530, 960).build();
-                SecretPanel secretPanel = new SecretPanel(new SecretGame(secret), won -> { }, sound -> { }, () -> false);
+                SecretPanel secretPanel = new SecretPanel(new SecretGame(secret), won -> { }, sound -> { }, () -> { }, () -> false);
                 secretPanel.tick(0.5);
                 render(secretPanel, output.resolve("secret.png"), 1280, 720);
-                render(new SecretPanel(new SecretGame(secret), won -> { }, sound -> { }, () -> true), output.resolve("secret-reduced.png"), 960, 600);
+                render(new SecretPanel(new SecretGame(secret), won -> { }, sound -> { }, () -> { }, () -> true), output.resolve("secret-reduced.png"), 960, 600);
             } catch (Exception error) { throw new RuntimeException(error); }
         });
         assertTrue(Files.size(output.resolve("office.png")) > 100_000);
@@ -108,7 +108,7 @@ class UiRenderTest {
             var level = new SecretLevelBuilder().player(100).bundle(100)
                     .destination(new Rectangle(1000, 500, 100, 140)).witness(800, 900).build();
             var sounds = new java.util.ArrayList<com.gudos.audio.Sound>();
-            SecretPanel panel = new SecretPanel(new SecretGame(level), won -> { }, sounds::add, () -> false);
+            SecretPanel panel = new SecretPanel(new SecretGame(level), won -> { }, sounds::add, () -> { }, () -> false);
             var jump = panel.getActionMap().get("jump");
             var jumpUp = panel.getActionMap().get("jump-up");
             var action = panel.getActionMap().get("action");
@@ -129,31 +129,52 @@ class UiRenderTest {
                     .destination(new Rectangle(200, 500, 100, 140)).witness(900, 1100).timeLimit(0.05).build();
             var results = new java.util.ArrayList<Boolean>();
             SecretGame failed = new SecretGame(level);
-            SecretPanel panel = new SecretPanel(failed, results::add, sound -> { }, () -> false);
+            var silences = new java.util.concurrent.atomic.AtomicInteger();
+            SecretPanel panel = new SecretPanel(failed, results::add, sound -> { }, silences::incrementAndGet, () -> false);
             failed.action();
             panel.tick(0.1);
             assertEquals(SecretGame.State.LOST, failed.state());
+            assertEquals(1, silences.get());
             double position = failed.x();
-            panel.tick(1.0);
+            panel.setSize(320, 180);
+            BufferedImage firstStatic = new BufferedImage(320, 180, BufferedImage.TYPE_INT_RGB);
+            var firstGraphics = firstStatic.createGraphics();
+            panel.paint(firstGraphics);
+            firstGraphics.dispose();
+            assertTrue(new Color(firstStatic.getRGB(0, 12)).getRed() > 200, "line starts at left edge immediately");
+            assertTrue(new Color(firstStatic.getRGB(319, 12)).getRed() > 200, "line reaches right edge immediately");
+            panel.tick(0.2);
+            BufferedImage secondStatic = new BufferedImage(320, 180, BufferedImage.TYPE_INT_RGB);
+            var secondGraphics = secondStatic.createGraphics();
+            panel.paint(secondGraphics);
+            secondGraphics.dispose();
+            assertArrayEquals(firstStatic.getRGB(0, 0, 320, 180, null, 0, 320), secondStatic.getRGB(0, 0, 320, 180, null, 0, 320), "signal static must not animate");
             assertEquals(position, failed.x());
-            assertTrue(results.isEmpty(), "Failure should remain on screen during the transition");
-            panel.tick(0.7);
+            assertTrue(results.isEmpty(), "Failure should remain on screen for three seconds");
+            panel.tick(2.8);
             assertEquals(List.of(false), results);
             panel.tick(1);
             assertEquals(1, results.size(), "The completion callback must run only once");
+            assertEquals(1, silences.get());
 
             SecretGame won = new SecretGame(new SecretLevelBuilder().player(200).bundle(200)
                     .destination(new Rectangle(200, 500, 100, 140)).witness(900, 1100).build());
             var wins = new java.util.ArrayList<Boolean>();
-            SecretPanel winningPanel = new SecretPanel(won, wins::add, sound -> { }, () -> false);
-            won.action();
-            won.action();
+            var winSilences = new java.util.concurrent.atomic.AtomicInteger();
+            SecretPanel winningPanel = new SecretPanel(won, wins::add, sound -> { }, winSilences::incrementAndGet, () -> false);
+            var use = winningPanel.getActionMap().get("action");
+            use.actionPerformed(null);
+            winningPanel.getActionMap().get("action-up").actionPerformed(null);
+            use.actionPerformed(null);
+            assertEquals(1, winSilences.get(), "winning should silence audio immediately");
             winningPanel.tick(0);
+            assertEquals(1, winSilences.get());
             assertTrue(wins.isEmpty());
-            winningPanel.tick(1.0);
+            winningPanel.tick(2.9);
             assertTrue(wins.isEmpty());
-            winningPanel.tick(0.7);
+            winningPanel.tick(0.2);
             assertEquals(List.of(true), wins);
+            assertEquals(1, winSilences.get());
         });
     }
 

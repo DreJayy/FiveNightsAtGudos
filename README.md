@@ -28,7 +28,7 @@ On macOS, double-click **`run.command`**, or run `./run.command` in Terminal. Th
 - Completed, power-failure and caught results. Five unlockable nights with increasingly fast movement and shorter defense windows.
 - Automatic pause on focus loss and borderless fullscreen.
 - Persistent local profiles, progress, attempt history, text preferences and shift reports.
-- A hidden lore platformer on CAM 04 (Nights 1–4), replayable without limit. A/D or arrows move, Space jumps, E picks up, drops or delivers the bundle, and Esc pauses. The 60-second timer starts on pickup. Walk behind foreground cover while carrying the bundle, or drop it behind cover: the HIDDEN label means it is safe from the three patrolling witnesses. The timer continues while hiding. Both winning and failing restart the same night; winning does not unlock the next night.
+- A hidden lore platformer on CAM 04 (Nights 1–4), replayable without limit. A/D or arrows move, Space jumps, E picks up, drops or delivers the bundle, and Esc pauses. The 60-second timer starts on pickup. Walk behind foreground cover while carrying the bundle, or drop it behind cover to hide it from the three patrolling witnesses. The timer continues while hiding. Both winning and failing restart the same night; winning does not unlock the next night.
 
 **Survive Sir Gudo:** watch his progress on CCTV, lower the monitor when he reaches the office, face his doorway with A/D or the mouse edges, and hold F until he completely disappears. Release the flashlight between encounters to conserve power. Footsteps and a direction hint announce an office arrival even while the monitor is open. Ignoring him causes a jumpscare and a recorded loss.
 

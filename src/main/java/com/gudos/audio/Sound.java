@@ -1,6 +1,6 @@
 package com.gudos.audio;
 
-/** Named sound cues map to bundled WAV paths and individual gains relative to master volume. */
+/** Named cues have gains relative to master volume; a null path means Chiptune synthesizes them. */
 public enum Sound {
     MENU_MUSIC("music/menu-darkness.wav", 0.65f),
     MENU_STATIC("effects/menu-static.wav", 0.22f),

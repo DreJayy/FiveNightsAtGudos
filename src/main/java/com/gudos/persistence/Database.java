@@ -196,7 +196,9 @@ public final class Database {
                     insert.setString(8, run.endedAt().toString());
                     inserted = insert.executeUpdate();
                 }
-                // Only a newly saved win advances progress. MAX preserves unlocks on earlier-night replays.
+                // Only normal shift survival advances progress. MINIGAME_COMPLETED is recorded
+                // as an attempt but deliberately does not unlock the next night.
+                // MAX preserves unlocks on earlier-night replays.
                 if (inserted > 0 && run.outcome() == Outcome.COMPLETED) {
                     try (PreparedStatement update = connection.prepareStatement("""
                             UPDATE progress SET highest_completed=MAX(highest_completed,?),

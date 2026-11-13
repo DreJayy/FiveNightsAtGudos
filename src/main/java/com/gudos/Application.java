@@ -238,11 +238,13 @@ public final class Application implements Navigation {
 
     // Opening does not wait for storage; previous secret attempts never block another play.
     private void openSecret() {
+        // Night 5 is deliberately excluded. Replaying on earlier nights is always allowed.
         if (busy || session == null || session.night() >= 5 || current != gamePanel) return;
+        // Freeze the existing shift before switching screens: its clock, power and encounter stop.
         gamePanel.releaseControls();
         session.pause();
         try {
-            secretPanel = new SecretPanel(new SecretGame(createSecretLevel()), this::finishSecret, audio::play, () -> settings.reducedEffects());
+            secretPanel = new SecretPanel(new SecretGame(createSecretLevel()), this::finishSecret, audio::play, audio::stopAll, () -> settings.reducedEffects());
             show(secretPanel);
             audio.ambience(Sound.SECRET_AMBIENCE);
         } catch (RuntimeException error) {
@@ -252,7 +254,8 @@ public final class Application implements Navigation {
         }
     }
 
-    // Kept separate from navigation so the exact production level can be tested headlessly.
+    // Builder pattern client: specify the level step by step and finish with build(). Keeping this
+    // separate from navigation also lets tests construct the exact production level headlessly.
     static SecretLevel createSecretLevel() {
         return new SecretLevelBuilder().width(2560).player(80).bundle(240)
                     .destination(new Rectangle(2410, 510, 125, 130))
@@ -272,6 +275,7 @@ public final class Application implements Navigation {
     // Finish this exact attempt; automatic navigation waits for the normal, retryable save.
     private void finishSecret(boolean won) {
         if (session == null || session.finished() || current != secretPanel) return;
+        // Despite the field name, this is the same night: a secret does not complete/unlock a shift.
         nextNightAfterSecret = session.night();
         if (won) session.completeSecret(); else session.failSecret();
         finishShift();
@@ -352,6 +356,7 @@ public final class Application implements Navigation {
             if (quitAfterSave) close();
             else if (menuAfterSave) { menuAfterSave = false; showMenu(); }
             else if (nextNightAfterSecret != 0) {
+                // Wait for both SQLite and the text report before creating the fresh attempt.
                 int next = nextNightAfterSecret;
                 nextNightAfterSecret = 0;
                 secretPanel = null;

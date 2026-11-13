@@ -101,12 +101,15 @@ public final class GamePanel extends ScenePanel {
         addMouseListener(new MouseAdapter() {
             @Override public void mouseExited(MouseEvent event) { pointerInside = false; }
             @Override public void mouseClicked(MouseEvent event) {
+                // Only left-clicks on the active CAM 04 feed can count toward the hidden trigger.
                 if (!SwingUtilities.isLeftMouseButton(event) || !session.monitorOpen() || session.camera() != 4 || session.paused() || session.finished()) return;
                 Point2D p = scenePoint(event.getPoint());
                 // The projection is recomputed at the current sweep, then mapped back to the source image.
                 var source = assets.scene(Scene.CAM_04, session.sceneState(Scene.CAM_04));
                 cameraProjection.render(source, CameraMotion.pan(Scene.CAM_04, session.elapsed()));
                 Point pixel = cameraProjection.sourcePoint((int) (p.getX() * PanoramaRenderer.WIDTH / WIDTH), (int) (p.getY() * PanoramaRenderer.HEIGHT / HEIGHT));
+                // The bounds are fractions of the original stockroom image, so the target follows
+                // camera panning and window resizing. Only a click inside the paper increments the count.
                 if (pixel != null && pixel.x >= source.getWidth() * 0.285 && pixel.x <= source.getWidth() * 0.325
                         && pixel.y >= source.getHeight() * 0.24 && pixel.y <= source.getHeight() * 0.40 && ++paperClicks >= 5) {
                     paperClicks = 0;
@@ -117,6 +120,7 @@ public final class GamePanel extends ScenePanel {
         syncControls();
     }
 
+    // Application supplies the navigation callback; this panel does not construct the minigame.
     public void onSecret(Runnable action) { secret = action; }
 
     private GameButton button(String label, GameButton.Style style, Runnable action) {
