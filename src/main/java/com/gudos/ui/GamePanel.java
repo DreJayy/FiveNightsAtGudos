@@ -3,6 +3,7 @@ package com.gudos.ui;
 import com.gudos.assets.AssetManager;
 import com.gudos.assets.PanoramaRenderer;
 import com.gudos.audio.Sound;
+import com.gudos.game.CameraMotion;
 import com.gudos.game.GameSession;
 import com.gudos.game.Scene;
 import com.gudos.persistence.Settings;
@@ -28,6 +29,8 @@ public final class GamePanel extends ScenePanel {
     // Separate renderers keep their own reusable output images, allowing clean/occupied views to blend.
     private final PanoramaRenderer officeProjection = new PanoramaRenderer();
     private final PanoramaRenderer occupiedProjection = new PanoramaRenderer();
+    // Match the camera's sweep when translating clicks back to the source-image paper.
+    private final PanoramaRenderer cameraProjection = new PanoramaRenderer();
     private final SceneRenderer cameraRenderer;
     private final SceneRenderer cameraTransitionRenderer;
     // Callbacks let this screen read current preferences, request a sound, or pause through Application.
