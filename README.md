@@ -13,7 +13,7 @@ The included Maven wrapper downloads Maven and dependencies on the first build, 
 java --enable-native-access=ALL-UNNAMED -jar target/five-nights-at-gudos.jar
 ```
 
-On macOS/Linux, use `sh ./mvnw clean verify`, then the same `java` command. Java 17-compatible bytecode is produced even if a newer JDK is installed.
+On macOS, double-click **`run.command`**, or run `./run.command` in Terminal. The launcher builds the game and starts it, just like `run.cmd` on Windows. On macOS/Linux, you can also use `sh ./mvnw clean verify`, then the same `java` command. Java 17-compatible bytecode is produced even if a newer JDK is installed.
 
 ## What's playable now
 
