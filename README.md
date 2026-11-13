@@ -119,6 +119,24 @@ Unmapped states fall back to the default image. Missing files explicitly listed 
 
 The four new PCM audio cues are synthesized specifically for this game. Reproduce them from the repository root with `powershell -File tools/generate-encounter-audio.ps1`; no extra software or downloaded character audio is needed.
 
+## Design patterns (structural)
+
+The game implements two distinct structural patterns in its own code:
+
+- **Facade — `audio/AudioService.java`:** `play`, `ambience`, and `menuMusic` hide Java Sound decoding, clip caching, gain controls, looping, worker-thread scheduling, and cleanup. `Application` requests audio without managing that subsystem.
+- **Decorator — `ui/rendering/`:** `SceneRenderer` is the component interface, `CameraSceneRenderer` is the concrete component, and `RendererDecorator` implements the same interface while holding/delegating to another renderer. `VhsRendererDecorator` and `DimmedRendererDecorator` add interference and darkness after the wrapped renderer draws. `GamePanel` actually composes these objects for normal CCTV and camera-switch interference:
+
+  ```java
+  SceneRenderer camera = new VhsRendererDecorator(
+          new CameraSceneRenderer(session, assets), assets, 0.25f);
+  SceneRenderer switching = new VhsRendererDecorator(
+          new DimmedRendererDecorator(camera, 115), assets, 0.85f, 3);
+  ```
+
+  The outer VHS decorator accelerates only its own interference, not the wrapped rendering. Reduced visual effects bypass VHS noise and the switching chain; the room still renders. Effects are assembled once and reuse the current camera, occupancy, and shift clock on every frame. This is a custom Decorator implementation, not just the project's use of Java's `BufferedInputStream` decorator.
+
+`RendererDecoratorTest` checks delegation, composability, effect order, reduced effects, graphics-state isolation, and pixel-for-pixel compatibility with the previous CCTV drawing sequence.
+
 ## Tests
 
 `mvnw.cmd clean verify` exercises shift timing, all three enemy routes, gradual retreat and recovery, directional flashlight defense, pause, attack/morning precedence, full survival on all five nights, power failure, camera/light exclusion, camera motion, panorama projection, SQLite migration/transactions/profile isolation, text files, bundled assets and headless Swing rendering. Visual previews of occupied cameras, all three office approaches, partial fade, retreat, animated/reduced jumpscare and caught results are generated under **`target/ui-preview/`**. Audio decoding is tested without requiring a speaker/mixer.
