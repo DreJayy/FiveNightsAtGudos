@@ -6,6 +6,8 @@ A **Java + Swing** carinderia night-shift game with a classic FNAF-style interfa
 
 Install a **JDK 17 or newer**, then double-click **`run.cmd`** (or run `.\run.cmd` in PowerShell).
 
+The Windows launcher uses a JDK 17+ from `JAVA_HOME`, `PATH`, or common installation folders (including NetBeans and Android Studio) for both building and running. An older Java on `PATH` can remain installed; the launcher does not change system-wide Java settings.
+
 The included Maven wrapper downloads Maven and dependencies on the first build, so the first run requires internet. The built game runs completely offline:
 
 ```powershell
