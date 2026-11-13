@@ -6,6 +6,8 @@ A **Java + Swing** carinderia night-shift game with a classic FNAF-style interfa
 
 Install a **JDK 17 or newer**, then double-click **`run.cmd`** (or run `.\run.cmd` in PowerShell).
 
+The Windows launcher uses a JDK 17+ from `JAVA_HOME`, `PATH`, or common installation folders (including NetBeans and Android Studio) for both building and running. An older Java on `PATH` can remain installed; the launcher does not change system-wide Java settings.
+
 The included Maven wrapper downloads Maven and dependencies on the first build, so the first run requires internet. The built game runs completely offline:
 
 ```powershell
@@ -119,6 +121,24 @@ To add another state:
 Unmapped states fall back to the default image. Missing files explicitly listed in the manifest fail startup with an error rather than silently hiding a broken asset. Enemy timing and route state live in `GudoEncounter`; `GameSession` splits updates at encounter, power and morning deadlines so behavior is independent of frame size.
 
 The four new PCM audio cues are synthesized specifically for this game. Reproduce them from the repository root with `powershell -File tools/generate-encounter-audio.ps1`; no extra software or downloaded character audio is needed.
+
+## Design patterns (structural)
+
+The game implements two distinct structural patterns in its own code:
+
+- **Facade — `audio/AudioService.java`:** `play`, `ambience`, and `menuMusic` hide Java Sound decoding, clip caching, gain controls, looping, worker-thread scheduling, and cleanup. `Application` requests audio without managing that subsystem.
+- **Decorator — `ui/rendering/`:** `SceneRenderer` is the component interface, `CameraSceneRenderer` is the concrete component, and `RendererDecorator` implements the same interface while holding/delegating to another renderer. `VhsRendererDecorator` and `DimmedRendererDecorator` add interference and darkness after the wrapped renderer draws. `GamePanel` actually composes these objects for normal CCTV and camera-switch interference:
+
+  ```java
+  SceneRenderer camera = new VhsRendererDecorator(
+          new CameraSceneRenderer(session, assets), assets, 0.25f);
+  SceneRenderer switching = new VhsRendererDecorator(
+          new DimmedRendererDecorator(camera, 115), assets, 0.85f, 3);
+  ```
+
+  The outer VHS decorator accelerates only its own interference, not the wrapped rendering. Reduced visual effects bypass VHS noise and the switching chain; the room still renders. Effects are assembled once and reuse the current camera, occupancy, and shift clock on every frame. This is a custom Decorator implementation, not just the project's use of Java's `BufferedInputStream` decorator.
+
+`RendererDecoratorTest` checks delegation, composability, effect order, reduced effects, graphics-state isolation, and pixel-for-pixel compatibility with the previous CCTV drawing sequence.
 
 ## Tests
 

@@ -3,10 +3,13 @@ package com.gudos.ui;
 import com.gudos.assets.AssetManager;
 import com.gudos.assets.PanoramaRenderer;
 import com.gudos.audio.Sound;
-import com.gudos.game.CameraMotion;
 import com.gudos.game.GameSession;
 import com.gudos.game.Scene;
 import com.gudos.persistence.Settings;
+import com.gudos.ui.rendering.CameraSceneRenderer;
+import com.gudos.ui.rendering.DimmedRendererDecorator;
+import com.gudos.ui.rendering.SceneRenderer;
+import com.gudos.ui.rendering.VhsRendererDecorator;
 
 import javax.swing.*;
 import java.awt.*;
@@ -25,7 +28,8 @@ public final class GamePanel extends ScenePanel {
     // Separate renderers keep their own reusable output images, allowing clean/occupied views to blend.
     private final PanoramaRenderer officeProjection = new PanoramaRenderer();
     private final PanoramaRenderer occupiedProjection = new PanoramaRenderer();
-    private final PanoramaRenderer cameraProjection = new PanoramaRenderer();
+    private final SceneRenderer cameraRenderer;
+    private final SceneRenderer cameraTransitionRenderer;
     // Callbacks let this screen read current preferences, request a sound, or pause through Application.
     private final Supplier<Settings> settings;
     private final Consumer<Sound> sound;
@@ -58,6 +62,10 @@ public final class GamePanel extends ScenePanel {
         this.settings = settings;
         this.sound = sound;
         this.pause = pause;
+        // Our Decorator pattern: the same component interface supports stacked visual effects.
+        cameraRenderer = new VhsRendererDecorator(new CameraSceneRenderer(session, assets), assets, 0.25f);
+        cameraTransitionRenderer = new VhsRendererDecorator(
+                new DimmedRendererDecorator(cameraRenderer, 115), assets, 0.85f, 3);
         setFocusTraversalKeysEnabled(false);
         monitorButton = place(button("OPEN MONITOR    [SPACE]", GameButton.Style.MONITOR, this::toggleMonitor), 335, 647, 650, 55);
         monitorButton.getAccessibleContext().setAccessibleDescription("Raise or lower the monitor with Space or Tab.");
@@ -244,17 +252,9 @@ public final class GamePanel extends ScenePanel {
     // Camera movement uses the session clock, not the mouse or time spent watching this feed.
     private void renderCamera(Graphics2D g) {
         Scene scene = Scene.camera(session.camera());
-        double sweep = CameraMotion.pan(scene, session.elapsed());
-        g.drawImage(cameraProjection.render(assets.scene(scene, session.sceneState(scene)), sweep), 0, 0, WIDTH, HEIGHT, null);
-        g.setColor(new Color(0, 0, 0, 32));
-        g.fillRect(0, 0, WIDTH, HEIGHT);
-        Theme.vignette(g, 205);
-        VhsOverlay.paint(g, assets, age, 0.25f, settings.get().reducedEffects());
-        if (transition > 0 && !settings.get().reducedEffects()) {
-            g.setColor(new Color(0, 0, 0, 115));
-            g.fillRect(0, 0, WIDTH, HEIGHT);
-            VhsOverlay.paint(g, assets, age * 3, 0.85f, false);
-        }
+        boolean reducedEffects = settings.get().reducedEffects();
+        SceneRenderer renderer = transition > 0 && !reducedEffects ? cameraTransitionRenderer : cameraRenderer;
+        renderer.render(g, age, reducedEffects);
         shadeHud(g);
         g.setColor(Color.WHITE);
         g.setStroke(new BasicStroke(2));
