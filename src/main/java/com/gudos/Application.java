@@ -6,9 +6,9 @@ import com.gudos.audio.Sound;
 import com.gudos.game.GameSession;
 import com.gudos.game.Outcome;
 import com.gudos.game.RunRecord;
-import com.gudos.game.SecretGame;
-import com.gudos.game.SecretLevel;
-import com.gudos.game.SecretLevelBuilder;
+import com.gudos.game.minigame.SecretGame;
+import com.gudos.game.minigame.SecretLevel;
+import com.gudos.game.minigame.SecretLevelBuilder;
 import com.gudos.persistence.*;
 import com.gudos.ui.*;
 

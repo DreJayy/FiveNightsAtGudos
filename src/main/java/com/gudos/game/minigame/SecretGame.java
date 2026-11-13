@@ -1,4 +1,4 @@
-package com.gudos.game;
+package com.gudos.game.minigame;
 
 import java.awt.Rectangle;
 import java.awt.Polygon;

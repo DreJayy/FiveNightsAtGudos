@@ -1,7 +1,7 @@
 package com.gudos.ui;
 
 import com.gudos.audio.Sound;
-import com.gudos.game.SecretGame;
+import com.gudos.game.minigame.SecretGame;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.Random;

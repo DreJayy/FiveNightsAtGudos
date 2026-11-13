@@ -1,6 +1,6 @@
 package com.gudos;
 
-import com.gudos.game.SecretGame;
+import com.gudos.game.minigame.SecretGame;
 import com.gudos.ui.SecretPanel;
 import org.junit.jupiter.api.Test;
 import javax.swing.SwingUtilities;

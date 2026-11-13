@@ -1,5 +1,8 @@
 package com.gudos.game;
 
+import com.gudos.game.minigame.SecretGame;
+import com.gudos.game.minigame.SecretLevel;
+import com.gudos.game.minigame.SecretLevelBuilder;
 import org.junit.jupiter.api.Test;
 import java.awt.Rectangle;
 import static org.junit.jupiter.api.Assertions.*;
