@@ -9,9 +9,29 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/*
+ * ShiftLogStoreTest
+ *
+ * Purpose: JUnit check for appending separate attempts and deduplicating a retry.
+ *
+ * Execution flow: Append a completed run twice, append an abandoned run once, then check two lines
+ * and readable fields.
+ *
+ * Design rationale: The repeated UUID must not produce a second ordinary retry
+ * line. UTF-8 names and duration labels are checked.
+ *
+ * State: Uses TempDir and direct file content assertions.
+ *
+ * Summary: SQLite and text have distinct deduplication mechanisms that share the same stable
+ * run ID.
+ */
 class ShiftLogStoreTest {
     @TempDir Path directory;
 
+    /*
+     * Append one completed UUID twice and a different abandoned UUID once; assert exactly two
+     * readable UTF-8 lines with expected outcome/name/duration fields.
+     */
     @Test void reportsAppendAndRetriesDoNotDuplicate() throws Exception {
         Path file = directory.resolve("shift-log.txt");
         ShiftLogStore store = new ShiftLogStore(file);

@@ -24,20 +24,74 @@ import java.util.ArrayList;
 import static org.junit.jupiter.api.Assertions.*;
 
 /** Headless, real Swing/Java2D renders; previews are build artifacts, not game assets. */
+/*
+ * UiRenderTest
+ *
+ * Purpose: JUnit checks for real Swing panels rendered headlessly and their input/audio contracts.
+ *
+ * Execution flow: Construct panels on EDT, lay out desktop/small sizes, click real buttons or
+ * invoke named actions, advance models and compare states/pixels/callbacks.
+ *
+ * Design rationale: Headless painting checks controls/layout/effect logic without
+ * an actual screen. It does not prove native focus/fullscreen/physical audio.
+ *
+ * State: Previews go to target/ui-preview. Helpers action/findButton/render/layout
+ * support named input and screenshot checks.
+ *
+ * Summary: Panels are exercised as real Swing components; a no-op Navigation test double
+ * prevents real app navigation.
+ */
 class UiRenderTest {
     private static AssetManager assets;
     private static final Navigation NAVIGATION = new Navigation() {
+        /*
+         * Intentionally do nothing in this Navigation test double. Headless view tests can invoke
+         * controls without opening another screen, saving a file or exiting the test process.
+         */
         @Override public void menu() { }
+        /*
+         * Intentionally do nothing in this Navigation test double. Headless view tests can invoke
+         * controls without opening another screen, saving a file or exiting the test process.
+         */
         @Override public void page(Page page) { }
+        /*
+         * Intentionally do nothing in this Navigation test double. Headless view tests can invoke
+         * controls without opening another screen, saving a file or exiting the test process.
+         */
         @Override public void startNight(int night) { }
+        /*
+         * Intentionally do nothing in this Navigation test double. Headless view tests can invoke
+         * controls without opening another screen, saving a file or exiting the test process.
+         */
         @Override public void saveSettings(Settings settings) { }
+        /*
+         * Intentionally do nothing in this Navigation test double. Headless view tests can invoke
+         * controls without opening another screen, saving a file or exiting the test process.
+         */
         @Override public void resumeShift() { }
+        /*
+         * Intentionally do nothing in this Navigation test double. Headless view tests can invoke
+         * controls without opening another screen, saving a file or exiting the test process.
+         */
         @Override public void leaveShift() { }
+        /*
+         * Intentionally do nothing in this Navigation test double. Headless view tests can invoke
+         * controls without opening another screen, saving a file or exiting the test process.
+         */
         @Override public void quit() { }
     };
 
+    /*
+     * Load AssetManager once before the suite. UI operations in the tests are explicitly dispatched
+     * to EDT.
+     */
     @BeforeAll static void load() throws Exception { assets = new AssetManager(); }
 
+    /*
+     * Render title/extras/office/six
+     * cameras/settings/guide/credits/selection/pause/result/records/secret views at desktop and
+     * selected small sizes. Assert controls remain in bounds and output images are nontrivial.
+     */
     @Test void allScreensRenderAtDesktopAndSmallWindowSizes() throws Exception {
         Path output = Path.of("target", "ui-preview");
         Files.createDirectories(output);
@@ -85,6 +139,10 @@ class UiRenderTest {
         assertTrue(Files.size(output.resolve("menu.png")) > 100_000);
     }
 
+    /*
+     * Locate/click real GameButtons and assert monitor changes, camera six selection and visibility
+     * rules. This checks callback wiring rather than only calling the model.
+     */
     @Test void actualSwingButtonsControlTheMonitorAndCameras() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             GameSession game = new GameSession(1);
@@ -105,6 +163,10 @@ class UiRenderTest {
         });
     }
 
+    /*
+     * Invoke secret jump/pickup inputs and collect cues; assert sounds happen only for
+     * model-accepted grounded jump and successful pickup.
+     */
     @Test void secretSoundsOnlyPlayForSuccessfulActions() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             var level = new SecretLevelBuilder().player(100).bundle(100)
@@ -125,6 +187,10 @@ class UiRenderTest {
         });
     }
 
+    /*
+     * Cause each secret ending, assert immediate single silence, frozen pixels/model and delayed
+     * exactly-once completion after three unpaused seconds.
+     */
     @Test void secretFailureAndWinBothWaitForFrozenTransition() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             var level = new SecretLevelBuilder().player(100).bundle(100)
@@ -180,6 +246,10 @@ class UiRenderTest {
         });
     }
 
+    /*
+     * Generate views of occupied cameras, each office direction, partial fade, retreat, caught
+     * results and animated/reduced scare. Check scare callback is delivered once.
+     */
     @Test void encounterRendersOccupiedFeedsOfficeFadingAndJumpscare() throws Exception {
         Path output = Path.of("target", "ui-preview");
         Files.createDirectories(output);
@@ -252,6 +322,10 @@ class UiRenderTest {
                 Files.readAllBytes(output.resolve("gudo-jumpscare-shake.png"))));
     }
 
+    /*
+     * Invoke named press/release actions; assert auto-repeat does not toggle repeatedly, camera
+     * shortcuts work, light releases, and held direction changes office pan.
+     */
     @Test void keyboardActionsDebounceMonitorAndControlLightAndOfficeYaw() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             GameSession game = new GameSession(1);
@@ -279,6 +353,10 @@ class UiRenderTest {
         });
     }
 
+    /*
+     * Collect panel cues while toggling equipment/cameras and watching movement. Reject spurious
+     * light/reselection/sighting sounds and paused scheduling.
+     */
     @Test void soundsFollowAcceptedInputsAndViewingGudoDoesNotPlayASightingSting() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             GameSession game = new GameSession(1);
@@ -319,6 +397,10 @@ class UiRenderTest {
         });
     }
 
+    /*
+     * Watch a departure, assert disruption variant and reduced still screen; switch away/back and
+     * pause/resume without extending/restarting the two-second active-clock deadline.
+     */
     @Test void watchedDepartureDisruptsOnlyThatFeedForTwoActiveSeconds() throws Exception {
         Path output = Path.of("target", "ui-preview");
         Files.createDirectories(output);
@@ -374,6 +456,10 @@ class UiRenderTest {
         });
     }
 
+    /*
+     * Simulate watched/unwatched/closed-monitor travel, checking garble only for the watched changed
+     * feed and one deep-step cue per move.
+     */
     @Test void watchedArrivalsGarbleButUnwatchedMovesStayClearAndEveryMoveHasDeepSteps() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             // Monitor down, watching an unrelated feed, and selecting each destination before the move.
@@ -399,6 +485,10 @@ class UiRenderTest {
         });
     }
 
+    /*
+     * Advance an office threat through warning, <=3-second urgency and successful retreat; require
+     * each designated cue once and no false completed shift.
+     */
     @Test void arrivalUrgencyAndRetreatSoundsPlayOncePerEncounter() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             GameSession game = new GameSession(1);
@@ -422,17 +512,28 @@ class UiRenderTest {
         });
     }
 
+    /*
+     * Look up and invoke a named Swing Action installed by ScenePanel.bind. Fail if the expected
+     * binding is missing.
+     */
     private static void action(ScenePanel view, String name) {
         Action action = view.getActionMap().get(name);
         assertNotNull(action, "Missing keyboard action: " + name);
         action.actionPerformed(new java.awt.event.ActionEvent(view, 0, name));
     }
 
+    /*
+     * Find the requested JButton in a panel so tests exercise the actual installed listener.
+     */
     private static JButton findButton(Container panel, String label) {
         for (Component component : panel.getComponents()) if (component instanceof JButton button && button.getText().equals(label)) return button;
         return null;
     }
 
+    /*
+     * Size and recursively lay out a panel, assert children stay inside window bounds, paint it into
+     * a PNG and save the preview. This is headless rendering, not an OS screenshot.
+     */
     private static void render(ScenePanel panel, Path file, int width, int height) throws Exception {
         panel.setSize(width, height);
         layout(panel);
@@ -448,6 +549,10 @@ class UiRenderTest {
         ImageIO.write(image, "png", file.toFile());
     }
 
+    /*
+     * Recursively call doLayout on child containers so headless component bounds match the view
+     * being tested.
+     */
     private static void layout(Container parent) {
         parent.doLayout();
         for (Component child : parent.getComponents()) if (child instanceof Container container) layout(container);

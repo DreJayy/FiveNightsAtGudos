@@ -6,11 +6,36 @@ import com.gudos.game.Scene;
 import java.awt.*;
 
 /** Common dim office background, page headings, and back navigation for secondary screens. */
+/*
+ * BackdropPanel
+ *
+ * Purpose: Shares the dim office background and navigation chrome for secondary pages.
+ *
+ * Execution flow: Extras, settings, guide/credits, selection, pause, records and result reuse
+ * backdrop or pageChrome.
+ *
+ * Design rationale: Avoid duplicating the same drawing and Back binding. It is an
+ * abstract base class; inheritance alone is not the custom Decorator pattern.
+ *
+ * State: assets is inherited by secondary screens; pageChrome draws heading, subtitle
+ * and version.
+ *
+ * Summary: Back and Escape request navigation.menu. This implementation returns to the title
+ * menu, even when the page was opened through Extras.
+ */
 public abstract class BackdropPanel extends ScenePanel {
     protected final AssetManager assets;
 
+    /*
+     * Pass through ScenePanel initialization and retain the shared AssetManager for secondary-screen
+     * backgrounds.
+     */
     protected BackdropPanel(AssetManager assets) { this.assets = assets; }
 
+    /*
+     * Fill black, draw the clean office as a cover image, then add a heavy black tint. It is a fixed
+     * background for secondary screens, not a live GameSession view.
+     */
     protected void backdrop(Graphics2D g) {
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, WIDTH, HEIGHT);
@@ -19,6 +44,10 @@ public abstract class BackdropPanel extends ScenePanel {
         g.fillRect(0, 0, WIDTH, HEIGHT);
     }
 
+    /*
+     * Reuse the backdrop, then draw heading/subtitle/version at consistent logical coordinates.
+     * Subclasses add their page-specific controls/content.
+     */
     protected void pageChrome(Graphics2D g, String title, String subtitle) {
         backdrop(g);
         Theme.text(g, title, 80, 158, Theme.pixel(52), Theme.PAPER);
@@ -27,6 +56,10 @@ public abstract class BackdropPanel extends ScenePanel {
     }
 
     // Both the Back button and Escape request the menu through the same navigation interface.
+    /*
+     * Install the Back GameButton and Escape binding, both pointing to navigation.menu. They return
+     * to the title menu rather than to the previous Extras card.
+     */
     protected void backButton(Navigation navigation) {
         place(new GameButton("← BACK", GameButton.Style.QUIET, navigation::menu), 72, 38, 112, 38);
         bind("ESCAPE", "back", navigation::menu);

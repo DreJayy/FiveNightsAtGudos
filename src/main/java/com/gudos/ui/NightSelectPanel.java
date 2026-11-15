@@ -6,9 +6,29 @@ import com.gudos.persistence.Progress;
 import java.awt.*;
 
 /** Displays five nights; buttons are enabled from the current profile's saved progress. */
+/*
+ * NightSelectPanel
+ *
+ * Purpose: Shows five night buttons gated by the loaded progress.
+ *
+ * Execution flow: Extras -> Select Night -> enabled Night N -> navigation.startNight(N).
+ *
+ * Design rationale: UI disables locked nights; Application rechecks unlocked before
+ * starting. Capture the loop value in selected so each listener keeps its own night.
+ *
+ * State: progress supplies nextNight/highestCompleted; the page renders Cleared, Locked
+ * or no status.
+ *
+ * Summary: Disabling a button is user feedback. The coordinator guard is the second boundary
+ * that rejects a locked start request.
+ */
 public final class NightSelectPanel extends BackdropPanel {
     private final Progress progress;
 
+    /*
+     * Create five night buttons with captured numeric callbacks to Navigation.startNight. Set each
+     * enabled state from Progress.unlocked; Application rechecks eligibility.
+     */
     public NightSelectPanel(AssetManager assets, Navigation navigation, Progress progress) {
         super(assets);
         this.progress = progress;
@@ -23,6 +43,10 @@ public final class NightSelectPanel extends BackdropPanel {
         }
     }
 
+    /*
+     * Show the saved selection page; label nights Cleared or Locked using loaded progress and draw
+     * the increasing-difficulty hint. Button callbacks were created with a captured night value.
+     */
     @Override protected void render(Graphics2D g) {
         pageChrome(g, "Select Night", "Finish a shift to unlock the next. Replaying does not reset your progress.");
         for (int night = 1; night <= 5; night++) {

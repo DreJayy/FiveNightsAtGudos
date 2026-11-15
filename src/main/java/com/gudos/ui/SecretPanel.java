@@ -12,6 +12,26 @@ import java.util.function.Consumer;
  * Swing view/controller for SecretGame. It translates input into model actions and draws
  * the model; Application owns the window, audio service, shift records and navigation.
  */
+/*
+ * SecretPanel
+ *
+ * Purpose: Controls and renders the scrolling pixel-art minigame.
+ *
+ * Execution flow: GamePanel paper trigger -> Application.openSecret -> SecretPanel; key events call
+ * SecretGame; tick advances it; outcome freezes, silences and reports after three seconds.
+ *
+ * Design rationale: Use an offscreen 640x360 image enlarged nearest-neighbor. World
+ * scrolling is isolated from fixed HUD. reported and outcomeSilenced prevent duplicate
+ * callbacks/audio.
+ *
+ * State: left/right/jump/action are input flags; paused stops model and transition
+ * time; pixels is the retro canvas; transitionTime reaches 3.0 before reporting; animation/walk
+ * drive visuals.
+ *
+ * Summary: This panel pauses its own model by skipping update. The original night session is
+ * separately paused by Application. Both success and failure save a secret outcome, then restart the
+ * same normal night.
+ */
 public final class SecretPanel extends ScenePanel {
     private final SecretGame game;
     private final Consumer<Boolean> finished;
@@ -25,6 +45,11 @@ public final class SecretPanel extends ScenePanel {
     private double animation, walk, transitionTime;
     private static final double TRANSITION_SECONDS = 3.0;
 
+    /*
+     * Retain model/outcome/audio/reduced-effect callbacks and bind A/D/arrows, Space, E and Escape.
+     * Debounce jump/action so held keys do not auto-repeat accepted actions. View construction does
+     * not start the pickup timer.
+     */
     public SecretPanel(SecretGame game, Consumer<Boolean> finished, Consumer<Sound> sound, Runnable silence, BooleanSupplier reducedEffects) {
         this.game = game; this.finished = finished; this.sound = sound; this.silence = silence; this.reducedEffects = reducedEffects;
         bind("pressed A", "left", () -> left = true); bind("released A", "left-up", () -> left = false);
@@ -52,9 +77,21 @@ public final class SecretPanel extends ScenePanel {
     }
 
     // Also called on window focus loss; clearing held keys prevents movement after focus returns.
+    /*
+     * Set paused and clear all held input flags. Application calls this on focus loss; Escape can
+     * later unpause this panel.
+     */
     public void pause() { paused = true; release(); }
+    /*
+     * Clear movement/jump/action flags so old physical input cannot continue after a pause or focus
+     * change.
+     */
     private void release() { left = right = jump = action = false; }
 
+    /*
+     * When the model first leaves PLAYING, set outcomeSilenced and run the audio-stop callback
+     * immediately. Delivery can end inside an E callback; capture/timeout can end during tick.
+     */
     private void silenceOnOutcome() {
         // Run once for both timeout/capture (detected during tick) and delivery (detected on E).
         if (!outcomeSilenced && game.state() != SecretGame.State.PLAYING) {
@@ -63,6 +100,11 @@ public final class SecretPanel extends ScenePanel {
         }
     }
 
+    /*
+     * Skip model updates while paused or ended. During play update movement and visual walk
+     * direction; on ending silence once, count three unpaused transition seconds, set reported and
+     * send the won boolean once. Application handles persistence/restarting.
+     */
     @Override public void tick(double seconds) {
         super.tick(seconds);
         if (!paused && game.state() == SecretGame.State.PLAYING) {
@@ -82,6 +124,11 @@ public final class SecretPanel extends ScenePanel {
         }
     }
 
+    /*
+     * Draw into the 640x360 pixel buffer with logical scaling, translate only a copied world context
+     * to follow the player across the 2560-wide level, draw fixed HUD/signal lines, then enlarge
+     * nearest-neighbor to the screen. This is 2D world scrolling.
+     */
     @Override protected void render(Graphics2D screen) {
         Graphics2D g = pixels.createGraphics();
         // A 640x360 pixel canvas retains crisp retro scaling while allowing facial/hair details.
@@ -104,12 +151,20 @@ public final class SecretPanel extends ScenePanel {
     }
 
     /** Fixed white tracking lines over the frozen scene; the positions never change per frame. */
+    /*
+     * Draw fixed horizontal white bands over the frozen final minigame scene. Their positions do not
+     * animate; reducedEffects lowers opacity. This is distinct from normal animated VHS noise.
+     */
     private void drawSignalLines(Graphics2D g) {
         g.setColor(new Color(255, 255, 255, reducedEffects.getAsBoolean() ? 150 : 230));
         int[] rows = {48, 112, 196, 276, 344, 424, 504, 596, 672};
         for (int y : rows) g.fillRect(0, y, WIDTH, 12);
     }
 
+    /*
+     * Draw background tiles, floor, stockroom doorway and platform tops in world coordinates. The
+     * destination/platform shapes come from the model level configuration.
+     */
     private void drawRoom(Graphics2D g) {
         int width = game.level().width();
         g.setColor(new Color(10, 10, 19)); g.fillRect(0, 0, width, HEIGHT);
@@ -143,6 +198,11 @@ public final class SecretPanel extends ScenePanel {
     }
 
     /** Background-only landmarks inspired by the dining room, serving counter and kitchen feeds. */
+    /*
+     * Draw visual-only dining/counter/kitchen landmarks across the side-view level. These shapes do
+     * not create physics obstacles; only level platforms/cover/destination have the corresponding
+     * model rules.
+     */
     private void drawCarinderiaDetails(Graphics2D g) {
         // The side-view connects the existing dining room, counter, kitchen and stockroom feeds.
         // Partitions mark the transitions without blocking the player's one-dimensional path.
@@ -197,6 +257,11 @@ public final class SecretPanel extends ScenePanel {
         for (int x = 2140; x < 2240; x += 20) { g.fillRect(x + 4, 405, 8, 8); g.fillRect(x, 413, 16, 28); }
     }
 
+    /*
+     * Draw model beam polygons, Gudo, the carried/dropped bundle, cover shelves and witnesses in
+     * that depth order. The view uses the same model polygons as collision; foreground cover visibly
+     * explains why a bundle can be hidden.
+     */
     private void drawWorld(Graphics2D g) {
         // Drawing order provides depth: beams, Gudo/bundle, foreground cover, then the witnesses.
         // Every light uses the exact polygon that the simulation checks for detection.
@@ -239,6 +304,11 @@ public final class SecretPanel extends ScenePanel {
         }
     }
 
+    /*
+     * Draw one pixel-art figure using a local transformed graphics copy. Mirror for left-facing
+     * direction, alternate limbs for walking and use an airborne pose for jumps. These are drawn
+     * shapes, not an external sprite-sheet animation.
+     */
     private void person(Graphics2D g, int x, int y, boolean right, int step, boolean gudo, boolean airborne) {
         Graphics2D s = (Graphics2D) g.create();
         // Mirror the same pixel art when the character faces left instead of maintaining two sprites.
@@ -275,6 +345,10 @@ public final class SecretPanel extends ScenePanel {
         s.dispose();
     }
 
+    /*
+     * Draw the shrouded bundle around the existing model anchor. The larger visual silhouette does
+     * not change center-based cover/detection or pickup rules.
+     */
     private void bundle(Graphics2D g, int x, int y) {
         // The 72-unit horizontal silhouette is about as long as a standing person's 70-unit
         // height. Keep the model anchor unchanged so drawing does not change cover detection.
@@ -298,6 +372,10 @@ public final class SecretPanel extends ScenePanel {
         g.fillRect(x + 60, y + 16, 4, 8);
     }
 
+    /*
+     * Draw instructions and countdown (TIME -- before first pickup), optional retro noise and the
+     * paused overlay. Only the model decrements remaining; the view ceil is display rounding.
+     */
     private void drawHud(Graphics2D g) {
         g.setColor(new Color(7, 7, 12)); g.fillRect(0, 0, WIDTH, 145);
         Color white = new Color(220, 209, 174), red = new Color(204, 86, 76);

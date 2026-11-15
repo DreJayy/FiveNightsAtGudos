@@ -15,18 +15,47 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/*
+ * DatabaseTest
+ *
+ * Purpose: JUnit integration checks against real temporary SQLite files.
+ *
+ * Execution flow: Create a fresh DB per test; save/reopen/retry/replay; test profiles, constraints,
+ * unlock cap, secret outcomes and legacy schema migrations.
+ *
+ * Design rationale: Real JDBC catches SQL and transaction behavior. TempDir
+ * protects ordinary player data.
+ *
+ * State: completed builds a short finished session. create runs before each test;
+ * directory is injected by JUnit.
+ *
+ * Summary: An invalid attempt must not unlock a night; retries must not duplicate; migration
+ * must retain old rows/progress.
+ */
 class DatabaseTest {
     @TempDir Path directory;
     private Database database;
 
+    /*
+     * Before each test open a fresh temporary SQLite file. Each test is isolated from the ordinary
+     * save directory and other tests.
+     */
     @BeforeEach void create() throws SQLException { database = new Database(directory.resolve("test.db")); }
 
+    /*
+     * Create a two-second GameSession for the requested night, advance to morning and return its
+     * completed immutable record.
+     */
     private RunRecord completed(int night) {
         GameSession game = new GameSession(night, 2);
         game.update(2);
         return game.result();
     }
 
+    /*
+     * Verify fresh Progress, save Night 1, reopen Database and assert progress/result survive
+     * connection recreation.
+     */
     @Test void createsProfileAndPersistsAcrossNewConnections() throws Exception {
         assertEquals(Progress.EMPTY, database.loadProgress("Night Guard"));
         RunRecord run = completed(1);
@@ -38,6 +67,10 @@ class DatabaseTest {
         assertEquals(run, reopened.loadRuns("Night Guard").get(0));
     }
 
+    /*
+     * Save the same UUID twice, then later/earlier completed nights; require one first row and
+     * monotonic unlocks with the correct final run count.
+     */
     @Test void retriesAreIdempotentAndReplaysDoNotRelockNights() throws Exception {
         RunRecord first = completed(1);
         database.saveRun("Player", first);
@@ -50,6 +83,10 @@ class DatabaseTest {
         assertEquals(3, database.loadRuns("Player").size());
     }
 
+    /*
+     * Save an abandoned attempt and assert total attempts increases while completed count and next
+     * night do not.
+     */
     @Test void onlySuccessfulShiftsUnlockProgress() throws Exception {
         GameSession game = new GameSession(1);
         game.update(10);
@@ -61,6 +98,10 @@ class DatabaseTest {
         assertEquals(Outcome.ABANDONED, database.loadRuns("Player").get(0).outcome());
     }
 
+    /*
+     * Save a name containing SQL-looking quoted text, assert the table still works, another player
+     * stays empty and case-insensitive lookup finds the same profile.
+     */
     @Test void separateProfilesAndQuotedNamesAreSafe() throws Exception {
         String unusual = "O'Brien'); DROP TABLE profiles;--";
         database.saveRun(unusual, completed(1));
@@ -69,6 +110,10 @@ class DatabaseTest {
         assertEquals(1, database.loadProgress(unusual.toLowerCase(java.util.Locale.ROOT)).totalRuns());
     }
 
+    /*
+     * Try an invalid night zero completed record, require SQLException, then assert no
+     * attempt/unlock update persisted. This exercises database constraint/rollback behavior.
+     */
     @Test void failedInsertDoesNotAdvanceProgress() throws Exception {
         RunRecord invalid = new RunRecord(UUID.randomUUID().toString(), 0, 10, 80, Outcome.COMPLETED, Instant.now(), Instant.now());
         assertThrows(SQLException.class, () -> database.saveRun("Player", invalid));
@@ -76,6 +121,10 @@ class DatabaseTest {
         assertTrue(database.loadRuns("Player").isEmpty());
     }
 
+    /*
+     * Save completed Night 5 directly through the storage API and assert nextNight remains five and
+     * unlocked(6) is false. This test does not imply the UI allows skipping locked nights.
+     */
     @Test void fifthNightDoesNotUnlockANonexistentSixth() throws Exception {
         database.saveRun("Player", completed(5));
         Progress progress = database.loadProgress("Player");
@@ -83,6 +132,10 @@ class DatabaseTest {
         assertFalse(progress.unlocked(6));
     }
 
+    /*
+     * Save failed and successful secret outcomes, retry the same successful UUID and reopen; assert
+     * exactly two secret rows and no normal progress advancement.
+     */
     @Test void secretAttemptsRemainRecordedWithoutCompletingTheNight() throws Exception {
         GameSession failed = new GameSession(1);
         failed.failSecret();
@@ -102,6 +155,10 @@ class DatabaseTest {
         assertTrue(reopened.loadRuns("Player").contains(won.result()));
     }
 
+    /*
+     * Create a legacy version-three completion table and flag, reopen/migrate, and verify the flag
+     * row remains without inventing a night completion.
+     */
     @Test void legacyProfileWideSecretFlagIsPreservedWithoutGuessingANight() throws Exception {
         Path file = directory.resolve("version3.db");
         Database old = new Database(file);
@@ -119,6 +176,10 @@ class DatabaseTest {
         }
     }
 
+    /*
+     * Rebuild a legacy outcome-constrained version-two table containing an old run; reopen through
+     * Database, save a secret failure and require both old/new records.
+     */
     @Test void migratesVersionTwoRunsBeforeSavingASecretFailure() throws Exception {
         Path file = directory.resolve("version2.db");
         Database old = new Database(file);
@@ -151,6 +212,10 @@ class DatabaseTest {
         assertTrue(migrated.loadRuns("Veteran").contains(failed.result()));
     }
 
+    /*
+     * Construct version-one schema with three old outcomes, retain a normal completed result,
+     * migrate and save CAUGHT. Verify history/completion count/unlock state across another reopen.
+     */
     @Test void migratesLegacyRunsAndPreservesProgressWhenRecordingCaughtOutcome() throws Exception {
         Path file = directory.resolve("legacy.db");
         Database legacy = new Database(file);

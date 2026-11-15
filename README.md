@@ -126,6 +126,7 @@ The four new PCM audio cues are synthesized specifically for this game. Reproduc
 
 The game implements two distinct structural patterns in its own code:
 
+- **Facade — `ui/Navigation.java` and `Application.java`:** screens request high-level navigation through `Navigation`; `Application` coordinates the hidden subsystem work. New Game calls `navigation.startNight(1)`, Continue passes `progress.nextNight()`, and night-selection/replay buttons use the same operation. `Application.startNight` checks eligibility, captures the profile, creates `GameSession` and `GamePanel`, wires input/audio/secret callbacks, switches the screen, and requests gameplay audio. The facade evidence is this orchestration behind one client request, rather than the interface alone.
 - **Facade — `audio/AudioService.java`:** `play`, `ambience`, and `menuMusic` hide Java Sound decoding, clip caching, gain controls, looping, worker-thread scheduling, and cleanup. `Application` requests audio without managing that subsystem.
 - **Decorator — `ui/rendering/`:** `SceneRenderer` is the component interface, `CameraSceneRenderer` is the concrete component, and `RendererDecorator` implements the same interface while holding/delegating to another renderer. `VhsRendererDecorator` and `DimmedRendererDecorator` add interference and darkness after the wrapped renderer draws. `GamePanel` actually composes these objects for normal CCTV and camera-switch interference:
 
@@ -153,6 +154,12 @@ java --enable-native-access=ALL-UNNAMED "-Dgudo.dataDir=target/desktop-smoke-dat
 This uses isolated saves and captures only the game window under `target/desktop-preview/`.
 
 The distributable is **`target/five-nights-at-gudos.jar`**; dependencies and runtime assets are bundled. The smaller version-numbered JAR is only an intermediate build artifact, not the distributable.
+
+## Project reviewer
+
+The [project documentation](docs/defense/README.md) includes a **45-page LaTeX reviewer**, with file responsibilities, clickable source locations, feature demonstrations, worked examples, pattern participants and practice questions. Its XeLaTeX source is included. Detailed method comments remain beside the code, using ordinary documentation wording.
+
+The New Game/navigation facade is covered alongside the audio facade and renderer Decorator. The hidden level's `SecretLevelBuilder` is an additional **creational Builder**, separate from the two structural pattern types.
 
 ## Asset rights
 

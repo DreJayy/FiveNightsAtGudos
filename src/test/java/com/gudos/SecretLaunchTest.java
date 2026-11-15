@@ -6,7 +6,30 @@ import org.junit.jupiter.api.Test;
 import javax.swing.SwingUtilities;
 import static org.junit.jupiter.api.Assertions.*;
 
+/*
+ * SecretLaunchTest
+ *
+ * Purpose: JUnit checks for the production minigame configuration and an actually winnable timed
+ * route.
+ *
+ * Execution flow: Build Application.createSecretLevel; sample witness beams; search walk/wait
+ * choices; replay a safe route and deliver. Also construct/paint the production panel on EDT.
+ *
+ * Design rationale: A path-existence check catches an impossible three-patrol
+ * layout. This is a test search algorithm, not gameplay AI.
+ *
+ * State: Nested Node is only a test search record; generated images go to
+ * target/ui-preview.
+ *
+ * Summary: The production level has a walkable safe route within sixty seconds; the test
+ * replays it into SecretGame and checks WON.
+ */
 class SecretLaunchTest {
+    /*
+     * Sample the production three-patrol beams at 0.02-second resolution. Search walk/wait choices
+     * on 0.1-second steps, reconstruct a safe route, replay it into the actual SecretGame, deliver
+     * and assert WON. This proves one route exists; it does not guide the player at runtime.
+     */
     @Test void levelCanBeCompletedWithinTheTimer() {
         var level = Application.createSecretLevel();
         var reference = new SecretGame(level);
@@ -17,6 +40,12 @@ class SecretLaunchTest {
             reference.update(.02, false, false);
             for (int guard = 0; guard < 3; guard++) beams[i][guard] = reference.witnessBeam(guard);
         }
+        /*
+         * Node
+         *
+         * Test-only path-search node recording a position, predecessor and chosen direction for
+         * route reconstruction.
+         */
         record Node(int position, Node previous, int direction) { }
         var states = new java.util.HashMap<Integer, Node>();
         states.put(0, new Node(0, null, 0));
@@ -52,6 +81,11 @@ class SecretLaunchTest {
         game.action();
         assertEquals(SecretGame.State.WON, game.state());
     }
+    /*
+     * Assert production width/cover/patrol counts, construct SecretPanel on EDT and paint
+     * start/kitchen previews after safe no-pickup movement. This checks the real Builder product and
+     * scrolling view can work together.
+     */
     @Test void productionLevelAndPanelCanBeConstructedOnSwingThread() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             var level = Application.createSecretLevel();

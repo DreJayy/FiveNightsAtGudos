@@ -17,6 +17,25 @@ import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 
 /** Edits a copy of the current preferences; Application owns saving and applying the submitted values. */
+/*
+ * SettingsPanel
+ *
+ * Purpose: Edits preferences in real Swing controls and submits an immutable Settings value.
+ *
+ * Execution flow: Extras -> Settings -> edit name/volume/effects/fullscreen -> Apply ->
+ * navigation.saveSettings(values()).
+ *
+ * Design rationale: DocumentFilter sanitizes typed/pasted names, and Settings
+ * validates again. Applying is explicit; Back does not save edits. The clipboard button copies the
+ * resolved data folder.
+ *
+ * State: JTextField name, JSlider volume, JCheckBox reducedEffects/fullscreen,
+ * GameButton apply, AppPaths paths and status. Nested CheckIcon customizes appearance while
+ * JCheckBox retains behavior.
+ *
+ * Summary: The view gathers values; Application performs IO and switches profiles only after
+ * the save path succeeds.
+ */
 public final class SettingsPanel extends BackdropPanel {
     private final JTextField name;
     private final JSlider volume;
@@ -26,6 +45,11 @@ public final class SettingsPanel extends BackdropPanel {
     private final AppPaths paths;
     private String status = "Preferences are written to settings.txt when you apply.";
 
+    /*
+     * Build real name/volume/effects/fullscreen controls from current Settings. Install a sanitizing
+     * DocumentFilter, custom slider/checkbox art, Apply -> navigation.saveSettings(values()), and
+     * Copy Data Folder. Editing does not save until Apply.
+     */
     public SettingsPanel(AssetManager assets, Navigation navigation, Settings settings, AppPaths paths) {
         super(assets);
         this.paths = paths;
@@ -40,9 +64,18 @@ public final class SettingsPanel extends BackdropPanel {
         name.getAccessibleContext().setAccessibleName("Player name, up to 32 characters");
         // Filter pasted/typed names before display: remove control characters and cap at 32 characters.
         ((AbstractDocument) name.getDocument()).setDocumentFilter(new DocumentFilter() {
+            /*
+             * Route inserted text through the same replace filter so typing and paste share
+             * sanitization and the name-length cap.
+             */
             @Override public void insertString(FilterBypass bypass, int offset, String text, AttributeSet attributes) throws BadLocationException {
                 replace(bypass, offset, 0, text, attributes);
             }
+            /*
+             * Remove control characters, compute capacity after replacing the selected span,
+             * truncate inserted text to the remaining 32-character allowance and call the bypass.
+             * Settings validates again at submission/load.
+             */
             @Override public void replace(FilterBypass bypass, int offset, int length, String text, AttributeSet attributes) throws BadLocationException {
                 String clean = text == null ? "" : text.replaceAll("\\p{Cntrl}", "");
                 int remaining = Math.max(0, 32 - (bypass.getDocument().getLength() - length));
@@ -54,6 +87,10 @@ public final class SettingsPanel extends BackdropPanel {
         volume.setOpaque(false);
         volume.setForeground(Theme.AMBER);
         volume.setUI(new BasicSliderUI(volume) {
+            /*
+             * Draw the slider base track and filled section up to the current value using a copied
+             * Graphics2D. This replaces appearance, not the JSlider value model.
+             */
             @Override public void paintTrack(Graphics graphics) {
                 Graphics2D g = (Graphics2D) graphics.create();
                 g.setColor(new Color(75, 75, 75));
@@ -62,6 +99,9 @@ public final class SettingsPanel extends BackdropPanel {
                 g.fillRoundRect(trackRect.x, trackRect.y + trackRect.height / 2 - 2, xPositionForValue(volume.getValue()) - trackRect.x, 4, 4, 4);
                 g.dispose();
             }
+            /*
+             * Draw the custom slider handle with focus-aware color, then dispose the graphics copy.
+             */
             @Override public void paintThumb(Graphics graphics) {
                 Graphics2D g = (Graphics2D) graphics.create();
                 Theme.quality(g);
@@ -69,6 +109,10 @@ public final class SettingsPanel extends BackdropPanel {
                 g.fillRoundRect(thumbRect.x, thumbRect.y, thumbRect.width, thumbRect.height, 3, 3);
                 g.dispose();
             }
+            /*
+             * Intentionally draw no default focus ring for this slider UI. The custom thumb color
+             * still reflects focus.
+             */
             @Override public void paintFocus(Graphics graphics) { }
         });
         volume.getAccessibleContext().setAccessibleName("Master volume");
@@ -86,6 +130,10 @@ public final class SettingsPanel extends BackdropPanel {
         }), 817, 551, 353, 42);
     }
 
+    /*
+     * Create a real JCheckBox with transparent background, the shared font and custom
+     * checked/unchecked icons. Swing still manages selection and input.
+     */
     private JCheckBox checkbox(String label, boolean selected) {
         JCheckBox box = new JCheckBox(label, selected);
         box.setOpaque(false);
@@ -100,9 +148,25 @@ public final class SettingsPanel extends BackdropPanel {
     }
 
     // Custom checkbox artwork; the JCheckBox still handles selection and input normally.
+    /*
+     * CheckIcon
+     *
+     * A value carrying checked state while implementing Swing Icon drawing; JCheckBox owns
+     * interaction.
+     */
     private record CheckIcon(boolean checked) implements Icon {
+        /*
+         * Report the custom checkbox icon width of 22 logical pixels to Swing layout.
+         */
         @Override public int getIconWidth() { return 22; }
+        /*
+         * Report the custom checkbox icon height of 22 logical pixels to Swing layout.
+         */
         @Override public int getIconHeight() { return 22; }
+        /*
+         * Draw the custom checkbox square/focus color and checkmark from the record checked flag.
+         * Copy/dispose graphics so the icon does not alter later painting.
+         */
         @Override public void paintIcon(Component component, Graphics graphics, int x, int y) {
             Graphics2D g = (Graphics2D) graphics.create();
             Theme.quality(g);
@@ -121,16 +185,32 @@ public final class SettingsPanel extends BackdropPanel {
     }
 
     // Read the form as one value object; Settings validates/clamps the values again.
+    /*
+     * Read all four form controls and construct a new validated Settings value. Reading the form
+     * alone does not persist it.
+     */
     public Settings values() { return new Settings(name.getText(), volume.getValue(), reducedEffects.isSelected(), fullscreen.isSelected()); }
 
+    /*
+     * Update the checkbox after Application successfully persists/applies an F11 change while this
+     * form is visible.
+     */
     public void setFullscreen(boolean value) { fullscreen.setSelected(value); }
 
     // Prevent another Apply request while the storage worker is still processing this one.
+    /*
+     * Disable Apply while an async save is active and update status text. Application owns the busy
+     * guard as well as this visual feedback.
+     */
     public void setSaving(boolean saving) {
         apply.setEnabled(!saving);
         status = saving ? "Saving preferences…" : "Preferences are written to settings.txt when you apply.";
     }
 
+    /*
+     * Draw labels/current volume, explain the three save files, show the resolved folder and status.
+     * Actual controls and Apply callback remain ordinary Swing children.
+     */
     @Override protected void render(Graphics2D g) {
         pageChrome(g, "Options", "");
         Theme.tracked(g, "PLAYER NAME", 82, 235, 11, Theme.AMBER);

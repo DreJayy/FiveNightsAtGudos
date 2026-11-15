@@ -21,10 +21,31 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
 /** Optional real-window/keyboard smoke check. Not part of the headless JUnit suite. */
+/*
+ * DesktopSmoke
+ *
+ * Purpose: Optional executable end-to-end check using a real game window and java.awt.Robot.
+ *
+ * Execution flow: main launches the real app with isolated saves, navigates
+ * settings/gameplay/pause/fullscreen/abandon/records/quit, and captures only the game window.
+ *
+ * Design rationale: This is not an automatic JUnit test. It requires a display and
+ * can move the mouse/send keys; run only on a free desktop with a separate gudo.dataDir.
+ *
+ * State: frame and Robot are shared helpers; await/onEdt coordinate with Swing; output
+ * goes to target/desktop-preview.
+ *
+ * Summary: It checks actual window/input integration that headless rendering cannot prove.
+ */
 public final class DesktopSmoke {
     private static JFrame frame;
     private static Robot robot;
 
+    /*
+     * Require an explicit isolated gudo.dataDir, launch Main, drive the real window with Robot,
+     * verify text settings/SQLite/log/records and orderly exit, and save game-window captures. This
+     * is a manual smoke executable, not a JUnit method.
+     */
     public static void main(String[] args) throws Exception {
         if (System.getProperty("gudo.dataDir") == null) throw new IllegalArgumentException("Set -Dgudo.dataDir to an isolated test directory");
         Path output = Path.of("target", "desktop-preview");
@@ -104,8 +125,16 @@ public final class DesktopSmoke {
         }
     }
 
+    /*
+     * Send one physical press and release using Robot. This exercises the real keyboard-routing
+     * path.
+     */
     private static void key(int code) { robot.keyPress(code); robot.keyRelease(code); }
 
+    /*
+     * Resolve a button by label on EDT, calculate its screen center, then use Robot to
+     * move/press/release there.
+     */
     private static void click(String label) throws Exception {
         Point point = onEdt(() -> {
             JButton target = button(frame, label);
@@ -118,6 +147,10 @@ public final class DesktopSmoke {
         robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
     }
 
+    /*
+     * Find a matching enabled button by one of the supplied label prefixes and click it through the
+     * helper path.
+     */
     private static void clickPrefix(String... prefixes) {
         SwingUtilities.invokeLater(() -> {
             for (String prefix : prefixes) {
@@ -128,6 +161,10 @@ public final class DesktopSmoke {
         });
     }
 
+    /*
+     * Poll the supplied condition on EDT until it succeeds or the fixed deadline expires. This
+     * bounds waits for asynchronous UI/storage state.
+     */
     private static void await(Callable<Boolean> condition, String description) throws Exception {
         long deadline = System.nanoTime() + 15_000_000_000L;
         while (System.nanoTime() < deadline) {
@@ -137,12 +174,20 @@ public final class DesktopSmoke {
         throw new AssertionError("Timed out waiting for " + description);
     }
 
+    /*
+     * Wrap Callable in FutureTask, invoke synchronously on the EDT, then return the value or
+     * propagate failure. UI inspection stays on the correct thread.
+     */
     private static <T> T onEdt(Callable<T> work) throws Exception {
         FutureTask<T> task = new FutureTask<>(work);
         SwingUtilities.invokeAndWait(task);
         return task.get();
     }
 
+    /*
+     * Capture only the game window bounds into an image and write PNG under the supplied preview
+     * directory. It is a diagnostic output, not a bundled room asset.
+     */
     private static void capture(Path directory, String name) throws Exception {
         // Paint our Swing tree, not the desktop: another window may cover this game.
         BufferedImage image = onEdt(() -> {
@@ -156,11 +201,18 @@ public final class DesktopSmoke {
         ImageIO.write(image, "png", directory.resolve(name + ".png").toFile());
     }
 
+    /*
+     * Find a currently showing JDialog so the smoke check can answer its own leave confirmation.
+     */
     private static JDialog showingDialog() {
         for (Window window : Window.getWindows()) if (window instanceof JDialog dialog && dialog.isShowing()) return dialog;
         return null;
     }
 
+    /*
+     * Recursively search child containers for a JButton with the exact label. Return null if none
+     * exists.
+     */
     private static JButton button(Container parent, String label) {
         if (parent == null) return null;
         for (Component child : parent.getComponents()) {
@@ -170,6 +222,10 @@ public final class DesktopSmoke {
         return null;
     }
 
+    /*
+     * Recursively find a JButton whose label begins with the requested prefix. Used when a dynamic
+     * label has a stable beginning.
+     */
     private static JButton buttonPrefix(Container parent, String prefix) {
         for (Component child : parent.getComponents()) {
             if (child instanceof JButton candidate && candidate.isShowing() && candidate.getText().startsWith(prefix)) return candidate;
@@ -178,6 +234,10 @@ public final class DesktopSmoke {
         return null;
     }
 
+    /*
+     * Recursively find a component by Java class so the check can recognize the current
+     * screen/control without reading private fields.
+     */
     private static <T> T find(Container parent, Class<T> type) {
         if (type.isInstance(parent)) return type.cast(parent);
         for (Component child : parent.getComponents()) {

@@ -13,16 +13,41 @@ import java.awt.Graphics2D;
 import java.util.Objects;
 
 /** Concrete component: the current CCTV room, without animated interference or HUD. */
+/*
+ * CameraSceneRenderer
+ *
+ * Purpose: Draws the current CCTV room without VHS or switching effects.
+ *
+ * Execution flow: GamePanel puts it inside VhsRendererDecorator; render reads selected camera, room
+ * state and sweep from the live session.
+ *
+ * Design rationale: Composition keeps one core room renderer separate from optional
+ * visual layers. The object is created once and reads updated model values each frame.
+ *
+ * State: session and assets are required; projection is a reusable PanoramaRenderer. It
+ * applies the base shade and vignette after room projection.
+ *
+ * Summary: This is the concrete component in Decorator, not a decorator itself.
+ */
 public final class CameraSceneRenderer implements SceneRenderer {
     private final GameSession session;
     private final AssetManager assets;
     private final PanoramaRenderer projection = new PanoramaRenderer();
 
+    /*
+     * Require nonnull GameSession and AssetManager, then retain them. Its projection buffer is owned
+     * by this concrete component and reused per frame.
+     */
     public CameraSceneRenderer(GameSession session, AssetManager assets) {
         this.session = Objects.requireNonNull(session);
         this.assets = Objects.requireNonNull(assets);
     }
 
+    /*
+     * Read current camera and scene-state key from GameSession, compute sweep from session elapsed,
+     * project the corresponding cached image and draw it at logical viewport size. Apply the room
+     * shade/vignette, leaving VHS/switch effects to wrappers.
+     */
     @Override public void render(Graphics2D graphics, double time, boolean reducedEffects) {
         Scene scene = Scene.camera(session.camera());
         double sweep = CameraMotion.pan(scene, session.elapsed());

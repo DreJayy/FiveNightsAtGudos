@@ -6,7 +6,27 @@ import java.awt.image.BufferedImage;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/*
+ * PanoramaRendererTest
+ *
+ * Purpose: JUnit checks for curved projection and output reuse.
+ *
+ * Execution flow: Generate a colored gradient; compare vertical edge/center samples and left/right
+ * center pixels; check image object identity.
+ *
+ * Design rationale: A gradient reveals sampling math without relying on a
+ * particular room photo. Reused identity proves allocation behavior.
+ *
+ * State: gradient is an artificial diagnostic image, not a game asset.
+ *
+ * Summary: The edge samples bend differently from the middle, and turning reveals different
+ * source columns.
+ */
 class PanoramaRendererTest {
+    /*
+     * Build a synthetic horizontal/vertical color gradient whose pixel channels reveal the sampled
+     * source position.
+     */
     private BufferedImage gradient() {
         BufferedImage image = new BufferedImage(1916, 821, BufferedImage.TYPE_INT_RGB);
         for (int y = 0; y < image.getHeight(); y++) for (int x = 0; x < image.getWidth(); x++) {
@@ -15,6 +35,10 @@ class PanoramaRendererTest {
         return image;
     }
 
+    /*
+     * Render centered gradient and compare top edge versus top center green channel; require a
+     * difference large enough to prove nonflat vertical sampling.
+     */
     @Test void perspectiveCurvesVerticalSamplingInsteadOfJustCropping() {
         BufferedImage projected = new PanoramaRenderer().render(gradient(), 0.5);
         int topEdge = (projected.getRGB(0, 0) >>> 8) & 255;
@@ -22,6 +46,10 @@ class PanoramaRendererTest {
         assertTrue(topEdge - topCenter > 15, "Cylindrical projection must bend the edges, unlike a flat crop");
     }
 
+    /*
+     * Render left then right, compare center pixels for changed view, and assert both calls return
+     * the same reused image object. An unchanged view must also reuse it.
+     */
     @Test void turningRevealsDifferentPartsOfTheRoomAndReusesOutputBuffer() {
         PanoramaRenderer renderer = new PanoramaRenderer();
         BufferedImage source = gradient();
