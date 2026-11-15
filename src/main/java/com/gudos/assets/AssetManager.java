@@ -13,11 +13,37 @@ import java.util.Map;
 import java.util.Properties;
 
 /** Loads bundled images once and exposes scene/state lookups to screens without file-handling code. */
+/*
+ * DEFENSE OVERVIEW: AssetManager
+ *
+ * Purpose: Loads bundled images, the scene manifest and decoded TV-noise frames, then serves cached
+ * lookups.
+ *
+ * Follow the flow: Main constructs one manager in the boot worker. Screens ask scene(scene,state),
+ * menuRender(index) or noise(frame); resource opens a classpath stream.
+ *
+ * Code-based rationale and tradeoff: Decode each referenced path once, require a default for all
+ * rooms, and fail startup for a listed missing asset. Unknown state names fall back to a clean
+ * default. This separates a bad key from a broken packaged asset.
+ *
+ * State to recognize: scenes maps keys such as cam03.occupied to images; menuRenders holds five
+ * portraits; noise holds five alpha-masked GIF frames.
+ *
+ * Defense answer: Gameplay supplies a room and state key; AssetManager supplies the corresponding
+ * cached image. It does not decide where Gudo moves.
+ */
 public final class AssetManager {
     private final Map<String, BufferedImage> scenes = new HashMap<>();
     private final BufferedImage[] menuRenders = new BufferedImage[5];
     private final BufferedImage[] noise;
 
+    /*
+     * DEFENSE: AssetManager constructor
+     *
+     * Decode five title portraits; load scenes.properties and decode each unique referenced image
+     * once; require a default for all seven scenes. Decode all GIF frames and turn luminance into
+     * alpha for white TV noise. Missing listed resources throw IOException during boot.
+     */
     public AssetManager() throws IOException {
         String[] menuFiles = {"00_NORMAL.png", "01_HOLLOW_STARE.png", "02_DEAD_EYES.png", "03_BROKEN_SMILE.png", "04_LAST_FLICKER.png"};
         for (int i = 0; i < menuFiles.length; i++) {
@@ -67,17 +93,48 @@ public final class AssetManager {
     }
 
     // Unknown state names fall back to the room's default; listed-but-missing files fail during loading.
+    /*
+     * DEFENSE: scene
+     *
+     * Look up scene.id + dot + state in cached images; if the key is unknown return that scene
+     * default. A manifest entry with a missing file already fails during construction instead of
+     * silently falling back.
+     */
     public BufferedImage scene(Scene scene, String state) {
         return scenes.getOrDefault(scene.id() + "." + state, scenes.get(scene.id() + ".default"));
     }
 
     // Wrap frame indices so callers can animate the noise indefinitely.
+    /*
+     * DEFENSE: noise
+     *
+     * Use floorMod to wrap positive or negative frame indices through the cached GIF frames. The
+     * returned image is shared, so callers should draw rather than mutate it.
+     */
     public BufferedImage noise(int frame) { return noise[Math.floorMod(frame, noise.length)]; }
+    /*
+     * DEFENSE: noiseFrameCount
+     *
+     * Return the decoded GIF frame count. Tests check the bundled static contains five distinct
+     * animation frames.
+     */
     public int noiseFrameCount() { return noise.length; }
+    /*
+     * DEFENSE: menuRender
+     *
+     * Return one of the five decoded title portraits by index. The caller supplies a valid 0..4
+     * index; this method does not clamp it.
+     */
     public BufferedImage menuRender(int index) { return menuRenders[index]; }
 
     // Read from the classpath, so the same resource lookup works inside the packaged JAR.
     // The caller owns and closes the returned stream.
+    /*
+     * DEFENSE: resource
+     *
+     * Open a classpath resource, including when the game is packaged in a JAR. Throw IOException if
+     * absent; the caller must close the stream using try-with-resources.
+     */
     public static InputStream resource(String path) throws IOException {
         InputStream stream = AssetManager.class.getResourceAsStream(path);
         if (stream == null) throw new IOException("Missing bundled resource: " + path);

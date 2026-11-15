@@ -11,10 +11,39 @@ import java.io.BufferedInputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+/*
+ * DEFENSE OVERVIEW: AssetManagerTest
+ *
+ * Purpose: JUnit checks for bundled scenes, state fallbacks, active audio, static and font.
+ *
+ * Follow the flow: Construct AssetManager once; verify dimensions/distinct states; decode every
+ * Sound without a mixer; inspect PCM, duration and attribution.
+ *
+ * Code-based rationale and tradeoff: Asset decoding can be tested without speakers. These tests
+ * prove packaging/decoding, not perceived volume on every machine.
+ *
+ * State to recognize: Uses before-all cached assets. Source WAV excerpts are checked for a
+ * nontrivial peak; garble/digital clips are two seconds.
+ *
+ * Defense answer: All active resources referenced by code should decode and required occupied images
+ * should differ from clean ones.
+ */
 class AssetManagerTest {
     private static AssetManager assets;
+    /*
+     * DEFENSE: load
+     *
+     * Construct one AssetManager before this suite so all tests inspect the same decoded resource
+     * set.
+     */
     @BeforeAll static void load() throws Exception { assets = new AssetManager(); }
 
+    /*
+     * DEFENSE: allSevenBundledScenesLoadAtOriginalResolution
+     *
+     * Loop through OFFICE and six cameras and assert each default image is 1916x821. This detects
+     * missing or unexpectedly resized clean assets.
+     */
     @Test void allSevenBundledScenesLoadAtOriginalResolution() {
         for (Scene scene : Scene.values()) {
             assertEquals(1916, assets.scene(scene, "default").getWidth());
@@ -22,10 +51,22 @@ class AssetManagerTest {
         }
     }
 
+    /*
+     * DEFENSE: futureUnmappedStatesFallbackToCleanRoom
+     *
+     * Request an unmapped camera state and assert it is the exact same clean image object. This
+     * proves the intended fallback contract.
+     */
     @Test void futureUnmappedStatesFallbackToCleanRoom() {
         assertSame(assets.scene(Scene.CAM_03, "default"), assets.scene(Scene.CAM_03, "future-state"));
     }
 
+    /*
+     * DEFENSE: everyEnemyRenderIsBundledAndDistinctFromTheCleanRoom
+     *
+     * Check all six occupied camera images and all directional/jumpscare office states are different
+     * objects from clean. Also verify occupied camera aspect ratio and minimum width.
+     */
     @Test void everyEnemyRenderIsBundledAndDistinctFromTheCleanRoom() {
         for (Scene scene : Scene.values()) {
             if (scene == Scene.OFFICE) continue;
@@ -39,6 +80,12 @@ class AssetManagerTest {
         }
     }
 
+    /*
+     * DEFENSE: everyActiveWavCanBeDecodedWithoutAudioHardware
+     *
+     * Iterate every Sound, decode a resource or generate a secret cue, and assert nonempty audio
+     * with a positive sample rate. No Clip/mixer is required, so this is not a speaker test.
+     */
     @Test void everyActiveWavCanBeDecodedWithoutAudioHardware() throws Exception {
         for (Sound sound : Sound.values()) {
             try (var stream = sound.path() == null ? com.gudos.audio.Chiptune.create(sound) : AudioSystem.getAudioInputStream(new BufferedInputStream(AssetManager.resource(sound.path())))) {
@@ -48,6 +95,12 @@ class AssetManagerTest {
         }
     }
 
+    /*
+     * DEFENSE: importantSourceCuesContainAudiblePcmAndInterferenceIsBoundedToTwoSeconds
+     *
+     * Verify active source cues use expected mono 16-bit little-endian PCM, bounded durations and a
+     * peak>=4000; assert garble/digital durations equal two seconds and scare fits its transition.
+     */
     @Test void importantSourceCuesContainAudiblePcmAndInterferenceIsBoundedToTwoSeconds() throws Exception {
         for (Sound sound : new Sound[]{Sound.FLASHLIGHT_ON, Sound.FLASHLIGHT_OFF, Sound.GUDO_STEP,
                 Sound.GUDO_WARNING, Sound.GUDO_POUND, Sound.GUDO_WHISPER, Sound.GARBLE_1,
@@ -74,6 +127,12 @@ class AssetManagerTest {
         }
     }
 
+    /*
+     * DEFENSE: secretAmbienceIsAnEightSecondSeamlessSynthesizedLoop
+     *
+     * Generate secret ambience and check eight seconds of samples, zero-valued endpoints and at
+     * least one audible sample. This checks the designed loop seam at sample endpoints.
+     */
     @Test void secretAmbienceIsAnEightSecondSeamlessSynthesizedLoop() throws Exception {
         try (var stream = com.gudos.audio.Chiptune.create(Sound.SECRET_AMBIENCE)) {
             assertEquals((long) stream.getFormat().getSampleRate() * 8, stream.getFrameLength());
@@ -86,6 +145,12 @@ class AssetManagerTest {
         }
     }
 
+    /*
+     * DEFENSE: downloadedStaticIsAnimatedAndPixelFontIsBundled
+     *
+     * Assert five distinct noise frames, expected GIF frame dimensions, VT323 font family and
+     * preserved attribution text.
+     */
     @Test void downloadedStaticIsAnimatedAndPixelFontIsBundled() throws Exception {
         assertEquals(5, assets.noiseFrameCount());
         assertEquals(640, assets.noise(0).getWidth());

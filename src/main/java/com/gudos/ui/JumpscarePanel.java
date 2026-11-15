@@ -9,6 +9,23 @@ import java.awt.image.ConvolveOp;
 import java.awt.image.Kernel;
 
 /** A generated still animated with a lunge, shake and cached directional blur. */
+/*
+ * DEFENSE OVERVIEW: JumpscarePanel
+ *
+ * Purpose: Animates the caught still and calls back once after 2.1 seconds.
+ *
+ * Follow the flow: Application.finishShift on CAUGHT starts sound/save and shows this; completion
+ * opens the prepared ResultPanel.
+ *
+ * Code-based rationale and tradeoff: Precompute a horizontal blur once. Zoom/shake reuse the still;
+ * reducedEffects keeps it stationary. Guard delivered avoids repeated navigation.
+ *
+ * State to recognize: DURATION=2.1; still/blurred are cached images; age drives zoom/shake/final
+ * fade; delivered gates callback.
+ *
+ * Defense answer: The scare is a visual transition after the simulation has already ended. Database
+ * saving starts during it.
+ */
 public final class JumpscarePanel extends ScenePanel {
     public static final double DURATION = 2.1;
     private final BufferedImage still;
@@ -17,6 +34,13 @@ public final class JumpscarePanel extends ScenePanel {
     private final Runnable complete;
     private boolean delivered;
 
+    /*
+     * DEFENSE: JumpscarePanel constructor
+     *
+     * Fetch the jumpscare image, prepare a viewport-sized copy and precompute the nine-sample
+     * horizontal convolution blur. Store reduced-effects and exactly-once completion callback; do
+     * not advance/save the model here.
+     */
     public JumpscarePanel(AssetManager assets, boolean reducedEffects, Runnable complete) {
         this.reducedEffects = reducedEffects;
         this.complete = complete;
@@ -31,6 +55,12 @@ public final class JumpscarePanel extends ScenePanel {
     }
 
     // Deliver the completion callback exactly once, letting Application show the result screen.
+    /*
+     * DEFENSE: tick
+     *
+     * Advance age and, after 2.1 seconds, set delivered before invoking the completion callback.
+     * Even later ticks cannot show the result twice.
+     */
     @Override public void tick(double seconds) {
         super.tick(seconds);
         if (age >= DURATION && !delivered) {
@@ -39,6 +69,13 @@ public final class JumpscarePanel extends ScenePanel {
         }
     }
 
+    /*
+     * DEFENSE: render
+     *
+     * Draw the cached still with zoom/shake and optional cached blur; reducedEffects uses a
+     * stationary image. Fade to black in the final 0.35 seconds. This transition happens after the
+     * model outcome is already CAUGHT.
+     */
     @Override protected void render(Graphics2D g) {
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, WIDTH, HEIGHT);

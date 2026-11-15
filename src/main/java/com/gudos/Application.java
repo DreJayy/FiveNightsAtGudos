@@ -24,6 +24,30 @@ import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 
 /** Coordinates screens on the EDT; all disk/JDBC work runs on a single IO worker. */
+/*
+ * DEFENSE OVERVIEW: Application
+ *
+ * Purpose: Coordinates screens, active attempts, audio and asynchronous storage; implements the
+ * Navigation facade contract.
+ *
+ * Follow the flow: Panels call Navigation; Application checks guards, creates or reuses the required
+ * model/view, changes the visible card, requests audio, and sends storage work to one IO worker.
+ *
+ * Code-based rationale and tradeoff: One coordinator keeps panels from opening database connections
+ * or managing the window. busy/savingRun and pendingRun protect saves from conflicting navigation.
+ * This is a practical application coordinator with a facade role, not a claim that every method is a
+ * GoF pattern.
+ *
+ * State to recognize: current is the visible ScenePanel; session is the active simulation; gamePanel
+ * and secretPanel are views. settings/progress are current loaded values. pendingRun/pendingProfile
+ * preserve a result across retries. io owns disk work; timer owns EDT ticks. nextNightAfterSecret
+ * actually stores the same night to restart.
+ *
+ * Defense answer: New Game calls navigation.startNight(1). Application.startNight checks
+ * eligibility, resets pending state, captures the profile, creates GameSession and GamePanel, wires
+ * callbacks, shows the panel and requests gameplay audio. That one request hides the startup
+ * subsystem.
+ */
 public final class Application implements Navigation {
     // One window hosts the current screen. Panels request navigation through the Navigation interface.
     private final JFrame frame;
@@ -67,6 +91,14 @@ public final class Application implements Navigation {
     private long lastFrame = System.nanoTime();
 
     // Dependencies loaded by Main are supplied here instead of being reloaded by every screen.
+    /*
+     * DEFENSE: Application constructor
+     *
+     * Receive the dependencies loaded by Main, create the shift log/audio service and current-card
+     * window, install orderly close/focus/global-key handling, create a coalesced 33 ms Swing Timer,
+     * show the menu, apply saved display mode and start ticking. Storage remains on the serial IO
+     * executor.
+     */
     public Application(JFrame frame, AssetManager assets, AppPaths paths, Database database,
                        SettingsStore settingsStore, Settings settings, Progress progress) {
         this.frame = frame;
@@ -82,10 +114,23 @@ public final class Application implements Navigation {
         // Route the window's X button through quit(), which can save an abandoned attempt first.
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         frame.addWindowListener(new WindowAdapter() {
+            /*
+             * DEFENSE: windowClosing
+             *
+             * Route the window X button through quit, so an active attempt can be recorded rather
+             * than silently discarded.
+             */
             @Override public void windowClosing(WindowEvent event) { quit(); }
         });
         // Losing focus pauses gameplay; changing fullscreen also changes focus temporarily.
         frame.addWindowFocusListener(new WindowAdapter() {
+            /*
+             * DEFENSE: windowLostFocus
+             *
+             * Unless fullscreen is currently rebuilding the native window, clear global held-key
+             * flags and pause the active normal or secret game. This prevents inactive-window
+             * gameplay from continuing.
+             */
             @Override public void windowLostFocus(WindowEvent event) {
                 if (!changingDisplay) {
                     escapeDown = fullscreenDown = false;
@@ -97,6 +142,12 @@ public final class Application implements Navigation {
         KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(keyDispatcher);
         frame.getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("F11"), "fullscreen");
         frame.getRootPane().getActionMap().put("fullscreen", new AbstractAction() {
+            /*
+             * DEFENSE: actionPerformed
+             *
+             * Request the coordinator fullscreen operation from the root-pane F11 action; the same
+             * method performs persistence and window handling.
+             */
             @Override public void actionPerformed(java.awt.event.ActionEvent event) { toggleFullscreen(); }
         });
         // About 30 UI updates per second; actual elapsed time is measured inside tick().
@@ -109,6 +160,13 @@ public final class Application implements Navigation {
 
     // Handle global keys first, then let the active panel resolve its own key bindings.
     // Held-key flags prevent repeated Escape/F11 presses from toggling screens continuously.
+    /*
+     * DEFENSE: dispatchKey
+     *
+     * Ignore events from other windows/dialogs or a closed application. Debounce held F11 and
+     * Escape; route global fullscreen first, then let the visible ScenePanel dispatch its own
+     * bindings. This prevents Swing traversal/default-button handling from swallowing gameplay keys.
+     */
     private boolean dispatchKey(KeyEvent event) {
         if (closed || current == null || !(event.getSource() instanceof Component component)) return false;
         Window origin = component instanceof Window window ? window : SwingUtilities.getWindowAncestor(component);
@@ -129,6 +187,14 @@ public final class Application implements Navigation {
     }
 
     // Main loop: advance gameplay, handle a finished shift, then update and repaint the screen.
+    /*
+     * DEFENSE: tick
+     *
+     * Measure real elapsed time with nanoTime, clamp one frame to 0.25 seconds, and update the
+     * normal model only when its GamePanel is visible. Handle a finished attempt before
+     * updating/repainting the current view. Finally refresh scene audio for an ongoing normal shift.
+     * The clamp intentionally discards excess stalled wall time.
+     */
     private void tick() {
         long now = System.nanoTime();
         // Cap a delayed frame at 0.25 seconds to avoid a large jump after a UI stall.
@@ -146,6 +212,13 @@ public final class Application implements Navigation {
     }
 
     // Replace the visible panel and reset the frame clock before the new screen receives input.
+    /*
+     * DEFENSE: show
+     *
+     * Replace the active card with the requested ScenePanel, revalidate/repaint, reset lastFrame and
+     * request focus later on the EDT. Resetting the clock avoids charging the new screen for time
+     * spent on the old one.
+     */
     private void show(ScenePanel panel) {
         current = panel;
         cards.removeAll();
@@ -158,6 +231,13 @@ public final class Application implements Navigation {
     }
 
     // Clear the previous shift's UI state; saved database progress is kept separately.
+    /*
+     * DEFENSE: showMenu
+     *
+     * Stop transient effects and clear session, panel and pending-result references, then create the
+     * title screen and request menu music. Saved Progress is retained; this does not delete database
+     * history.
+     */
     private void showMenu() {
         audio.stopEffects();
         nextNightAfterSecret = 0;
@@ -172,6 +252,13 @@ public final class Application implements Navigation {
     }
 
     // A return to the menu must resolve an active shift or acknowledge an incomplete save.
+    /*
+     * DEFENSE: menu
+     *
+     * Reject navigation during an IO/save operation. An active session goes through leaveShift. An
+     * incompletely saved result requires an explicit warning and a background progress refresh
+     * before the title menu; ordinary menu navigation uses showMenu.
+     */
     @Override public void menu() {
         if (busy || savingRun) return;
         if (session != null && !session.finished()) { leaveShift(); return; }
@@ -197,6 +284,13 @@ public final class Application implements Navigation {
     }
 
     // Build the requested Extras screen. Records need an asynchronous database read first.
+    /*
+     * DEFENSE: page
+     *
+     * Reject conflicting requests and active-shift navigation. Switch on the Page enum to build a
+     * screen; RECORDS instead shows loading, reads progress plus latest attempts on the IO worker,
+     * then constructs RecordsPanel on the EDT.
+     */
     @Override public void page(Page page) {
         if (busy || savingRun || session != null && !session.finished()) return;
         switch (page) {
@@ -222,6 +316,15 @@ public final class Application implements Navigation {
     }
 
     // Create a fresh simulation; Continue also uses this path rather than restoring a checkpoint.
+    /*
+     * DEFENSE: startNight
+     *
+     * Facade operation used by New Game, Continue, selection and replay: reject
+     * busy/saving/active/locked/incomplete-save cases; clear old result state; capture playerName;
+     * create a fresh GameSession; create GamePanel with settings/audio/pause callbacks; attach the
+     * secret callback; show it and request gameplay audio. No checkpoint is restored and no old
+     * records are deleted.
+     */
     @Override public void startNight(int night) {
         if (busy || savingRun || session != null && !session.finished() || !progress.unlocked(night)) return;
         if (pendingRun != null && !pendingSaved) return;
@@ -246,6 +349,13 @@ public final class Application implements Navigation {
         updateGameAudio();
     }
 
+    /*
+     * DEFENSE: updateGameAudio
+     *
+     * Translate session state into audio-layer requests: monitor hiss, office breathing, tension at
+     * power<=25 or shift progress>=0.65, approach pan and any watched-feed garble. AudioService owns
+     * loop/clip operations.
+     */
     private void updateGameAudio() {
         audio.gameplay(session.monitorOpen(), session.gudo().atOffice(),
                 session.power() <= 25 || session.progress() >= 0.65,
@@ -253,6 +363,14 @@ public final class Application implements Navigation {
     }
 
     // Opening does not wait for storage; previous secret attempts never block another play.
+    /*
+     * DEFENSE: openSecret
+     *
+     * Allow Nights 1-4 only while the normal GamePanel is active. Release controls, pause the
+     * original session and stop audio; build SecretGame/SecretPanel and show it. If construction
+     * fails, resume the existing night and restore gameplay audio. Previous wins do not block
+     * another launch.
+     */
     private void openSecret() {
         // Night 5 is deliberately excluded. Replaying on earlier nights is always allowed.
         if (busy || session == null || session.night() >= 5 || current != gamePanel) return;
@@ -274,6 +392,13 @@ public final class Application implements Navigation {
 
     // Builder pattern client: specify the level step by step and finish with build(). Keeping this
     // separate from navigation also lets tests construct the exact production level headlessly.
+    /*
+     * DEFENSE: createSecretLevel
+     *
+     * Use the Builder to create the exact production level: width 2560, player x80, bundle x240,
+     * destination x2410/y510/125x130, three platforms, six cover rectangles, three patrols, and 60
+     * seconds. Tests can call this package-visible factory without opening Application.
+     */
     static SecretLevel createSecretLevel() {
         return new SecretLevelBuilder().width(2560).player(80).bundle(240)
                     .destination(new Rectangle(2410, 510, 125, 130))
@@ -291,6 +416,13 @@ public final class Application implements Navigation {
 
     // SecretPanel calls this after the frozen/glitch success or failure sequence.
     // Finish this exact attempt; automatic navigation waits for the normal, retryable save.
+    /*
+     * DEFENSE: finishSecret
+     *
+     * Accept the callback only for the currently visible secret and an unfinished session. Retain
+     * the original night number, finish it as MINIGAME_COMPLETED or MINIGAME_FAILED, then use the
+     * normal finish/save pipeline. Neither secret result completes a normal night.
+     */
     private void finishSecret(boolean won) {
         if (session == null || session.finished() || current != secretPanel) return;
         // Despite the field name, this is the same night: a secret does not complete/unlock a shift.
@@ -300,6 +432,13 @@ public final class Application implements Navigation {
     }
 
     // Release held controls before pausing so the flashlight cannot remain stuck on after resume.
+    /*
+     * DEFENSE: pauseShift
+     *
+     * Only pause an active visible normal GamePanel. Clear held inputs, pause the model, replace the
+     * screen with PausePanel and switch ambience. Clearing held F prevents a stuck flashlight on
+     * resume.
+     */
     private void pauseShift() {
         if (session == null || session.finished() || current != gamePanel) return;
         gamePanel.releaseControls();
@@ -310,6 +449,12 @@ public final class Application implements Navigation {
     }
 
     // Reuse the same session and game panel, preserving the paused shift's in-memory state.
+    /*
+     * DEFENSE: resumeShift
+     *
+     * Resume the same unfinished session if no conflicting load is running. Show its existing
+     * GamePanel and restore gameplay audio. A new GameSession is not constructed here.
+     */
     @Override public void resumeShift() {
         if (session == null || session.finished() || busy) return;
         session.resume();
@@ -318,6 +463,12 @@ public final class Application implements Navigation {
     }
 
     // Confirm an early departure, mark it ABANDONED, and save before returning to the menu.
+    /*
+     * DEFENSE: leaveShift
+     *
+     * Pause the normal shift, confirm early departure, set menuAfterSave, finish ABANDONED and run
+     * finishShift. A canceled confirmation leaves the session paused so the player can resume.
+     */
     @Override public void leaveShift() {
         if (session == null || session.finished() || busy || savingRun) return;
         pauseShift();
@@ -331,6 +482,13 @@ public final class Application implements Navigation {
     }
 
     // Translate the simulation's final result into audio, a result screen, and a save request.
+    /*
+     * DEFENSE: finishShift
+     *
+     * Release controls, capture the immutable result and the profile recorded at start, and
+     * construct ResultPanel. Choose result sound/transition; CAUGHT shows JumpscarePanel while
+     * saving begins. Secret outcomes retain their frozen minigame screen until saving completes.
+     */
     private void finishShift() {
         gamePanel.releaseControls();
         pendingRun = session.result();
@@ -357,6 +515,14 @@ public final class Application implements Navigation {
     }
 
     // A save succeeds only when both storage operations finish; retry keeps the same run ID.
+    /*
+     * DEFENSE: savePendingRun
+     *
+     * Ignore absent/already-saved/in-flight results. Capture the same pending UUID/profile, run
+     * Database.saveRun followed by ShiftLogStore.append on IO, then enable result navigation. Honor
+     * queued quit/menu or restart the same night after secret outcomes. On failure keep the result
+     * and expose Retry Save; SQLite may already have committed.
+     */
     private void savePendingRun() {
         if (pendingRun == null || savingRun || pendingSaved) return;
         savingRun = true;
@@ -394,6 +560,14 @@ public final class Application implements Navigation {
     }
 
     // Load/select the named profile and persist preferences before applying them to the UI.
+    /*
+     * DEFENSE: saveSettings
+     *
+     * Only accept Apply from the visible SettingsPanel and while storage/display work is idle. Load
+     * or create the requested profile and save text preferences in the worker; on success replace
+     * settings/progress, set volume, apply any display change and show the title menu. On failure
+     * re-enable Apply and report the error.
+     */
     @Override public void saveSettings(Settings updated) {
         if (busy || savingRun || displaySavePending || !(current instanceof SettingsPanel panel)) return;
         busy = true;
@@ -418,6 +592,13 @@ public final class Application implements Navigation {
     }
 
     // F11 persists the new preference before changing the actual window mode.
+    /*
+     * DEFENSE: toggleFullscreen
+     *
+     * Guard concurrent changes, create a replacement Settings with the flipped fullscreen value,
+     * persist it on IO, and only then change the native window. Synchronize a visible SettingsPanel
+     * checkbox after success.
+     */
     private void toggleFullscreen() {
         if (busy || savingRun || displaySavePending || closed) return;
         displaySavePending = true;
@@ -435,6 +616,13 @@ public final class Application implements Navigation {
 
     // Swing requires disposing the native window before changing its border decorations.
     // Keep its old bounds so leaving fullscreen restores the window's previous size/position.
+    /*
+     * DEFENSE: applyDisplay
+     *
+     * Skip if already in the requested mode. Remember windowed bounds, dispose the native window,
+     * change undecorated state, apply fullscreen or restored bounds, and show it again.
+     * changingDisplay suppresses the temporary focus-loss pause caused by this operation.
+     */
     private void applyDisplay(boolean fullscreen) {
         if (frame.isUndecorated() == fullscreen) return;
         changingDisplay = true;
@@ -449,6 +637,13 @@ public final class Application implements Navigation {
     }
 
     // Normal exit waits for storage; an active shift is saved as ABANDONED after confirmation.
+    /*
+     * DEFENSE: quit
+     *
+     * Wait if a save/load/display preference is pending. For an active normal or secret attempt,
+     * pause, confirm, mark ABANDONED and save before closing. An incompletely saved result has a
+     * separate exit warning. Otherwise close immediately.
+     */
     @Override public void quit() {
         if (closed) return;
         if (busy || savingRun || displaySavePending) {
@@ -474,6 +669,13 @@ public final class Application implements Navigation {
     }
 
     // Stop timers/listeners and release audio/worker resources before disposing the window.
+    /*
+     * DEFENSE: close
+     *
+     * Mark closed, stop the Swing timer, unregister the global key dispatcher, queue audio cleanup,
+     * shut down the storage executor and dispose the frame. Background completion callbacks check
+     * closed before touching UI.
+     */
     private void close() {
         closed = true;
         timer.stop();
@@ -485,6 +687,13 @@ public final class Application implements Navigation {
 
     // Run blocking work on the storage thread, then deliver success/failure on Swing's EDT.
     // T lets the same helper return settings, progress, or a combined records result.
+    /*
+     * DEFENSE: submit
+     *
+     * Generic asynchronous bridge: execute Callable<T> on the one IO worker, then schedule success
+     * or failure Consumer callbacks on Swing EDT. Disk/JDBC work belongs inside work; screen
+     * mutation belongs inside the delivered callback.
+     */
     private <T> void submit(Callable<T> work, Consumer<T> success, Consumer<Exception> failure) {
         io.submit(() -> {
             try {
@@ -496,6 +705,12 @@ public final class Application implements Navigation {
         });
     }
 
+    /*
+     * DEFENSE: error
+     *
+     * Print the exception for diagnosis, request the ERROR cue, and show a storage-error dialog
+     * containing the human message plus exception message.
+     */
     private void error(String message, Exception error) {
         error.printStackTrace(System.err);
         audio.play(Sound.ERROR);
@@ -503,5 +718,10 @@ public final class Application implements Navigation {
     }
 
     // One worker result contains both the summary counters and the records-table rows.
+    /*
+     * DEFENSE TYPE: Register
+     *
+     * One IO result combining profile Progress and the latest RunRecord list for the records screen.
+     */
     private record Register(Progress progress, List<RunRecord> runs) { }
 }

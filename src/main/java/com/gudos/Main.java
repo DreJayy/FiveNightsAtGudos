@@ -10,14 +10,53 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 
 /** Entry point: creates the window, loads local data/assets, then hands control to Application. */
+/*
+ * DEFENSE OVERVIEW: Main
+ *
+ * Purpose: Starts the desktop application and loads its dependencies.
+ *
+ * Follow the flow: main schedules launch on Swing; launch shows LoadingPanel; SwingWorker loads
+ * paths, settings, database, progress and images; done constructs Application.
+ *
+ * Code-based rationale and tradeoff: The window can repaint while disk and image loading happen.
+ * Boot is a record that transfers the loaded values together. Startup failures display a message and
+ * dispose the window.
+ *
+ * State to recognize: Boot contains AppPaths, SettingsStore, Settings, Database, Progress and
+ * AssetManager. The loading Timer exists only during startup.
+ *
+ * Defense answer: Main is the entry point, not the gameplay loop. It prepares the program and hands
+ * control to Application.
+ */
 public final class Main {
+    /*
+     * DEFENSE: Main constructor
+     *
+     * Private constructor prevents creating utility entry-point objects. main and launch are static;
+     * this is not a Singleton instance.
+     */
     private Main() { }
 
+    /*
+     * DEFENSE: main
+     *
+     * Queue launch on the Swing event dispatch thread, then return. Swing component creation belongs
+     * on that thread; doing all startup synchronously here would either use the wrong thread or
+     * block the window.
+     */
     public static void main(String[] args) {
         // Swing components must be created and changed on its event dispatch thread (EDT).
         SwingUtilities.invokeLater(Main::launch);
     }
 
+    /*
+     * DEFENSE: launch
+     *
+     * Set the visual defaults, create and show a loading window, and start a SwingWorker.
+     * doInBackground loads writable paths, preferences, SQLite progress and assets; done stops the
+     * loading timer and constructs Application on the EDT. A failed boot displays the real cause and
+     * closes the window.
+     */
     private static void launch() {
         try { UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName()); }
         catch (Exception ignored) { /* Platform fallback remains usable. */ }
@@ -43,6 +82,14 @@ public final class Main {
         Timer loadingTimer = new Timer(33, event -> { loading.tick(0.033); loading.repaint(); });
         loadingTimer.start();
         new SwingWorker<Boot, Void>() {
+            /*
+             * DEFENSE: doInBackground
+             *
+             * Run boot IO and image decoding on the SwingWorker background thread. Resolve paths
+             * first, because the stores need those paths; load Settings before profile progress,
+             * because the saved playerName selects the profile. Return every dependency in one Boot
+             * value.
+             */
             @Override protected Boot doInBackground() throws Exception {
                 // Resolve the save folder, read preferences, open SQLite, and load this profile.
                 AppPaths paths = AppPaths.resolve();
@@ -54,6 +101,14 @@ public final class Main {
                 return new Boot(paths, store, settings, database, progress, assets);
             }
 
+            /*
+             * DEFENSE: done
+             *
+             * Run after the boot worker finishes, on the EDT. Stop loading animation; ignore
+             * completion if the window was closed; otherwise get the Boot result and create
+             * Application. Unwrap/report a failed worker instead of opening a partly initialized
+             * game.
+             */
             @Override protected void done() {
                 // SwingWorker returns here on the EDT, so it is safe to install the game UI.
                 loadingTimer.stop();
@@ -74,6 +129,12 @@ public final class Main {
     }
 
     // Draw the window icon in memory; no separate icon file is needed.
+    /*
+     * DEFENSE: icon
+     *
+     * Draw a small G icon into an in-memory image and dispose its Graphics2D. This avoids relying on
+     * another icon resource file.
+     */
     private static Image icon() {
         BufferedImage image = new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = image.createGraphics();
@@ -88,6 +149,11 @@ public final class Main {
     }
 
     // Immutable bundle carrying the worker's results back to the UI thread.
+    /*
+     * DEFENSE TYPE: Boot
+     *
+     * Immutable startup result bundle carried from SwingWorker background work to done on EDT.
+     */
     private record Boot(AppPaths paths, SettingsStore store, Settings settings, Database database,
                         Progress progress, AssetManager assets) { }
 }

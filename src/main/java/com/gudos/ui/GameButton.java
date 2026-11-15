@@ -4,10 +4,39 @@ import javax.swing.*;
 import java.awt.*;
 
 /** A normal Swing button with custom painting and a caller-supplied action. */
+/*
+ * DEFENSE OVERVIEW: GameButton
+ *
+ * Purpose: Uses a real JButton with custom visual styles and a supplied action.
+ *
+ * Follow the flow: Screens construct the button with label/style/callback; Swing fires
+ * ActionListener; the callback requests navigation or model input.
+ *
+ * Code-based rationale and tradeoff: Preserve enabled state, keyboard/button behavior and
+ * accessibility while drawing the game style. Painting only changes appearance, not game rules.
+ *
+ * State to recognize: Style: PRIMARY, SECONDARY, QUIET, CAMERA, TEXT, MONITOR, LIGHT. The inherited
+ * button model owns selected/pressed/hover states.
+ *
+ * Defense answer: A label is not the implementation. Follow the callback passed into the GameButton
+ * constructor to find the actual feature.
+ */
 public final class GameButton extends JButton {
+    /*
+     * DEFENSE TYPE: Style
+     *
+     * Named button appearances; input behavior remains in JButton and the supplied callback.
+     */
     public enum Style { PRIMARY, SECONDARY, QUIET, CAMERA, TEXT, MONITOR, LIGHT }
     private final Style style;
 
+    /*
+     * DEFENSE: GameButton constructor
+     *
+     * Initialize a real JButton, configure its font/style/accessibility/cursor/transparent painting,
+     * and install one ActionListener that invokes the supplied Runnable. This retains Swing
+     * enabled/selected/input semantics while custom paintComponent supplies appearance.
+     */
     public GameButton(String text, Style style, Runnable action) {
         super(text);
         this.style = style;
@@ -25,6 +54,14 @@ public final class GameButton extends JButton {
     }
 
     // Style selects the appearance; the inherited button model still owns pressed/selected states.
+    /*
+     * DEFENSE: paintComponent
+     *
+     * Read the inherited Swing model enabled/hover/selected/pressed states, then draw the chosen
+     * style. Monitor is a chevron tab, light is a hold indicator, camera is a two-line label, and
+     * normal/text buttons use measured clipping/selection arrows. Copy/dispose Graphics2D and leave
+     * click delivery to JButton; painting never starts a night or changes game rules.
+     */
     @Override protected void paintComponent(Graphics graphics) {
         Graphics2D g = (Graphics2D) graphics.create();
         Theme.quality(g);

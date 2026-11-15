@@ -5,20 +5,55 @@ import com.gudos.assets.AssetManager;
 import java.awt.*;
 
 /** Static guide/credits screen; the credits flag chooses which content is drawn. */
+/*
+ * DEFENSE OVERVIEW: InfoPanel
+ *
+ * Purpose: Draws the in-game guide or credits.
+ *
+ * Follow the flow: Application.page(GUIDE/CREDITS) constructs the same class with
+ * credits=false/true.
+ *
+ * Code-based rationale and tradeoff: Static information can share one view and backdrop. Guide
+ * controls are descriptive text; GamePanel/ScenePanel implement the actual actions.
+ *
+ * State to recognize: credits chooses renderCredits versus renderGuide. Current guide calls CAM 01
+ * front entrance.
+ *
+ * Defense answer: To find a rule, use the guide for the explanation and then show the corresponding
+ * GameSession/GamePanel method for proof.
+ */
 public final class InfoPanel extends BackdropPanel {
     private final boolean credits;
 
+    /*
+     * DEFENSE: InfoPanel constructor
+     *
+     * Store whether this instance shows credits or the guide, retain assets through the backdrop and
+     * install Back/Escape navigation.
+     */
     public InfoPanel(AssetManager assets, Navigation navigation, boolean credits) {
         super(assets);
         this.credits = credits;
         backButton(navigation);
     }
 
+    /*
+     * DEFENSE: render
+     *
+     * Choose the static guide or static credits based on the constructor flag. Neither branch
+     * changes gameplay or progress.
+     */
     @Override protected void render(Graphics2D g) {
         if (credits) renderCredits(g);
         else renderGuide(g);
     }
 
+    /*
+     * DEFENSE: renderGuide
+     *
+     * Draw control descriptions, three survival instructions and the no-checkpoint/focus-pause
+     * explanation. The actual enforcement is in GamePanel and GameSession.
+     */
     private void renderGuide(Graphics2D g) {
         pageChrome(g, "How to Play", "");
         Theme.tracked(g, "AT YOUR DESK", 82, 250, 12, Theme.AMBER);
@@ -52,6 +87,12 @@ public final class InfoPanel extends BackdropPanel {
         Theme.text(g, "Shifts auto-pause when the game loses focus. Mid-shift resume after closing the app is not supported.", 82, 625, Theme.sans(14), Theme.MUTED);
     }
 
+    /*
+     * DEFENSE: renderCredits
+     *
+     * Draw technology and asset attribution text. Current code/manifest/Sound enum are the authority
+     * if an older descriptive sentence differs from the implementation.
+     */
     private void renderCredits(Graphics2D g) {
         pageChrome(g, "Credits", "Five Nights at Gudo's");
         Theme.text(g, "Java + Swing", 82, 273, Theme.pixel(42), Color.WHITE);

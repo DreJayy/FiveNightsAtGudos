@@ -11,11 +11,43 @@ import java.util.Locale;
 import java.util.stream.Stream;
 
 /** Append-only human-readable reports, separate from authoritative SQLite progress. */
+/*
+ * DEFENSE OVERVIEW: ShiftLogStore
+ *
+ * Purpose: Appends a readable one-line report for each ended attempt.
+ *
+ * Follow the flow: Application.savePendingRun calls append after Database.saveRun.
+ *
+ * Code-based rationale and tradeoff: A run=UUID marker detects an already-written report on retry.
+ * Locale.ROOT stabilizes decimal formatting; UTF-8 preserves names. This is best-effort
+ * application-level deduplication, not a transactional database.
+ *
+ * State to recognize: One report line includes end time, UUID, sanitized name, night, outcome label,
+ * actual duration and remaining power.
+ *
+ * Defense answer: The log is an audit-style readable report. Continue does not parse it. A scan of
+ * existing lines avoids normal retry duplicates, but a process crash during append is not fully
+ * atomic.
+ */
 public final class ShiftLogStore {
     private final Path file;
 
+    /*
+     * DEFENSE: ShiftLogStore constructor
+     *
+     * Retain the report path. append performs directory creation, retry-marker detection and writing
+     * later.
+     */
     public ShiftLogStore(Path file) { this.file = file; }
 
+    /*
+     * DEFENSE: append
+     *
+     * Ensure the parent folder exists; scan existing UTF-8 lines for run=UUID plus delimiter and
+     * return if already present. Sanitize the name, format a stable report with Locale.ROOT and
+     * append one line. Database may already be committed when this fails; retry reuses the same
+     * UUID.
+     */
     public void append(String profile, RunRecord run) throws IOException {
         Files.createDirectories(file.toAbsolutePath().getParent());
         // Reuse the run ID as a marker so retrying after a partial save does not append twice.

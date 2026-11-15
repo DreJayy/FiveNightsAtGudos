@@ -14,11 +14,36 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /** Read-only table built from attempts already loaded by Application's storage worker. */
+/*
+ * DEFENSE OVERVIEW: RecordsPanel
+ *
+ * Purpose: Displays the current profile summary and read-only recent attempts table.
+ *
+ * Follow the flow: Extras -> Shift Records -> Application IO load -> constructor builds JTable from
+ * the returned list.
+ *
+ * Code-based rationale and tradeoff: No SQL is run while rendering. Absolute Instants are displayed
+ * in the local system zone. Only latest 200 rows are loaded; summary counts include all stored
+ * attempts.
+ *
+ * State to recognize: player/progress/empty support headings/empty state; a noneditable
+ * DefaultTableModel holds five columns and a JScrollPane provides scrolling.
+ *
+ * Defense answer: RecordsPanel displays saved history. Database.loadRuns performs
+ * filtering/order/limit, and loadProgress supplies totals.
+ */
 public final class RecordsPanel extends BackdropPanel {
     private final String player;
     private final Progress progress;
     private final boolean empty;
 
+    /*
+     * DEFENSE: RecordsPanel constructor
+     *
+     * Receive already-loaded profile summary and recent rows, install Back, and if nonempty build a
+     * read-only five-column JTable with local-zone timestamps, striped cells and scroll pane. No
+     * JDBC runs in this constructor.
+     */
     public RecordsPanel(AssetManager assets, Navigation navigation, String player, Progress progress, List<RunRecord> runs) {
         super(assets);
         this.player = player;
@@ -29,6 +54,12 @@ public final class RecordsPanel extends BackdropPanel {
         // Stored Instants represent absolute timestamps; display them in this computer's local timezone.
         DateTimeFormatter date = DateTimeFormatter.ofPattern("MMM dd, yyyy  HH:mm").withZone(ZoneId.systemDefault());
         DefaultTableModel model = new DefaultTableModel(new String[]{"FINISHED", "NIGHT", "RESULT", "TIME ON DUTY", "POWER LEFT"}, 0) {
+            /*
+             * DEFENSE: isCellEditable
+             *
+             * Always return false for every row/column. The history table is a display of saved
+             * results, not an editor for the underlying database.
+             */
             @Override public boolean isCellEditable(int row, int column) { return false; }
         };
         // Convert typed game results into the five columns shown to the player. No SQL runs in this panel.
@@ -52,6 +83,12 @@ public final class RecordsPanel extends BackdropPanel {
         table.getColumnModel().getColumn(1).setPreferredWidth(90);
         table.getColumnModel().getColumn(2).setPreferredWidth(235);
         DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
+            /*
+             * DEFENSE: getTableCellRendererComponent
+             *
+             * Reuse Swing default cell rendering, add padding, alternate row backgrounds and color
+             * completed outcomes. It only styles existing values; it does not query or write SQL.
+             */
             @Override public Component getTableCellRendererComponent(JTable t, Object value, boolean selected, boolean focus, int row, int column) {
                 super.getTableCellRendererComponent(t, value, selected, focus, row, column);
                 setBorder(BorderFactory.createEmptyBorder(0, 14, 0, 8));
@@ -73,6 +110,12 @@ public final class RecordsPanel extends BackdropPanel {
     }
 
     // Summary counters cover all this profile's attempts, even though only the newest 200 rows are loaded.
+    /*
+     * DEFENSE: render
+     *
+     * Draw summary counters for this profile and the table empty-state message when needed. Counts
+     * cover all attempts while the list query loads at most 200 recent rows.
+     */
     @Override protected void render(Graphics2D g) {
         pageChrome(g, "THE SHIFT REGISTER", "Saved locally in SQLite. Showing the latest 200 attempts for this player.");
         String[] labels = {"ON DUTY", "SHIFTS ATTEMPTED", "SHIFTS COMPLETED", "NIGHTS CLEARED"};

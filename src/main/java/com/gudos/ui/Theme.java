@@ -6,6 +6,22 @@ import java.awt.image.BufferedImage;
 import java.io.InputStream;
 
 /** Shared drawing helpers, colors, and bundled font used to keep all screens visually consistent. */
+/*
+ * DEFENSE OVERVIEW: Theme
+ *
+ * Purpose: Centralizes the bundled pixel font, colors and reusable drawing utilities.
+ *
+ * Follow the flow: Panels/buttons/renderers call static helpers instead of reproducing
+ * font/image/text code.
+ *
+ * Code-based rationale and tradeoff: One style source keeps UI consistent. Explicit wrap/ellipsize
+ * handle Java2D text limits. cover crops to fill while contain preserves the entire image.
+ *
+ * State to recognize: PIXEL is loaded from /fonts/VT323-Regular.ttf. Names such as sans/mono still
+ * derive the same pixel font; AMBER currently equals white.
+ *
+ * Defense answer: This is a static utility class, not a Singleton object or a game engine.
+ */
 public final class Theme {
     public static final Color BACKGROUND = Color.BLACK;
     public static final Color PAPER = Color.WHITE;
@@ -16,9 +32,21 @@ public final class Theme {
     public static final Color LINE = new Color(255, 255, 255, 115);
     private static final Font PIXEL = loadPixelFont();
 
+    /*
+     * DEFENSE: Theme constructor
+     *
+     * Private constructor prevents utility instances. Static font/drawing helpers provide shared
+     * presentation services.
+     */
     private Theme() { }
 
     // Load from the classpath so packaged/offline runs use the same font as development runs.
+    /*
+     * DEFENSE: loadPixelFont
+     *
+     * Read the bundled VT323 TTF from the classpath and create a Font. Fail clearly if
+     * missing/unreadable instead of silently substituting a different layout.
+     */
     private static Font loadPixelFont() {
         try (InputStream stream = Theme.class.getResourceAsStream("/fonts/VT323-Regular.ttf")) {
             if (stream == null) throw new IllegalStateException("Missing bundled VT323 font");
@@ -28,12 +56,41 @@ public final class Theme {
         }
     }
 
+    /*
+     * DEFENSE: pixel
+     *
+     * Derive the shared VT323 font at the requested exact point size.
+     */
     public static Font pixel(int size) { return PIXEL.deriveFont((float) size); }
+    /*
+     * DEFENSE: sans
+     *
+     * Derive VT323 at 1.25 times the requested size. Despite the helper name, this is the bundled
+     * pixel family, not a separate sans-serif resource.
+     */
     public static Font sans(int size) { return PIXEL.deriveFont(size * 1.25f); }
+    /*
+     * DEFENSE: heading
+     *
+     * Forward to pixel for title font sizing. Shared naming expresses usage rather than introducing
+     * another font family.
+     */
     public static Font heading(int size) { return pixel(size); }
+    /*
+     * DEFENSE: mono
+     *
+     * Derive VT323 at 1.25 times the size for monospaced-style UI text. It reuses the same loaded
+     * font object family.
+     */
     public static Font mono(int size) { return PIXEL.deriveFont(size * 1.25f); }
 
     // Keep pixel text sharp while using bilinear sampling for scaled room images.
+    /*
+     * DEFENSE: quality
+     *
+     * Set Java2D hints: crisp un-antialiased pixel text/shapes, bilinear room image interpolation
+     * and render quality. Individual retro views can override sampling locally.
+     */
     public static void quality(Graphics2D g) {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
@@ -43,6 +100,12 @@ public final class Theme {
     }
 
     // Draw a small black shadow behind opaque light text to improve readability over backgrounds.
+    /*
+     * DEFENSE: text
+     *
+     * Set font, optionally draw a small black shadow for opaque light text, then draw foreground
+     * text at its baseline. Coordinates are logical scene units.
+     */
     public static void text(Graphics2D g, String text, int x, int y, Font font, Color color) {
         g.setFont(font);
         if (color.getAlpha() > 200 && !color.equals(BACKGROUND)) {
@@ -54,6 +117,12 @@ public final class Theme {
     }
 
     // Increase character spacing for small section labels.
+    /*
+     * DEFENSE: tracked
+     *
+     * Draw a small label character by character with added spacing based on FontMetrics. It is a
+     * presentation helper only.
+     */
     public static void tracked(Graphics2D g, String text, int x, int y, int size, Color color) {
         g.setFont(mono(size));
         g.setColor(color);
@@ -66,6 +135,12 @@ public final class Theme {
     }
 
     // Java2D drawString does not wrap text, so break paragraphs into lines using font measurements.
+    /*
+     * DEFENSE: paragraph
+     *
+     * Split explicit newline paragraphs, add words until FontMetrics would exceed width, and advance
+     * baselines by lineHeight. Java2D drawString has no automatic wrapping.
+     */
     public static void paragraph(Graphics2D g, String text, int x, int y, int width, int lineHeight, Font font, Color color) {
         g.setFont(font);
         g.setColor(color);
@@ -86,6 +161,12 @@ public final class Theme {
     }
 
     // Shorten text to fit its allocated width while indicating that characters were omitted.
+    /*
+     * DEFENSE: ellipsize
+     *
+     * Measure the whole string; if it does not fit, shorten the suffix until text plus ellipsis
+     * fits. This prevents long player names/paths from overrunning allotted space.
+     */
     public static String ellipsize(Graphics2D g, String text, int width) {
         if (g.getFontMetrics().stringWidth(text) <= width) return text;
         int length = text.length();
@@ -94,6 +175,12 @@ public final class Theme {
     }
 
     // Fill a rectangle completely, cropping overflow; pan chooses which horizontal part remains visible.
+    /*
+     * DEFENSE: cover
+     *
+     * Use max(width scale,height scale) to fill the whole destination, clip overflow and choose
+     * horizontal crop by clamped pan. Restore the incoming clip afterward.
+     */
     public static void cover(Graphics2D g, BufferedImage image, int x, int y, int w, int h, double pan) {
         double scale = Math.max((double) w / image.getWidth(), (double) h / image.getHeight());
         int width = (int) Math.ceil(image.getWidth() * scale);
@@ -105,6 +192,12 @@ public final class Theme {
     }
 
     // Fit the entire image inside a rectangle without cropping, preserving its aspect ratio.
+    /*
+     * DEFENSE: contain
+     *
+     * Use min(width scale,height scale) to fit the entire image centered without cropping. Empty
+     * borders may remain.
+     */
     public static void contain(Graphics2D g, BufferedImage image, int x, int y, int w, int h) {
         double scale = Math.min((double) w / image.getWidth(), (double) h / image.getHeight());
         int width = (int) Math.round(image.getWidth() * scale);
@@ -113,6 +206,12 @@ public final class Theme {
     }
 
     // A radial gradient darkens the screen edges without modifying the source image.
+    /*
+     * DEFENSE: vignette
+     *
+     * Draw a radial dark gradient at the logical screen edges without altering the source image
+     * pixels.
+     */
     public static void vignette(Graphics2D g, int strength) {
         g.setPaint(new RadialGradientPaint(new Point2D.Float(640, 340), 810,
                 new float[]{0, 0.5f, 1}, new Color[]{new Color(0, 0, 0, 0), new Color(0, 0, 0, 15), new Color(0, 0, 0, strength)}));
@@ -120,6 +219,12 @@ public final class Theme {
     }
 
     // Small decorative drawing helpers used by screens; they do not manage Swing components.
+    /*
+     * DEFENSE: cornerFrame
+     *
+     * Draw four small line corners around a rectangle; this utility does not create a Swing
+     * border/control.
+     */
     public static void cornerFrame(Graphics2D g, int x, int y, int w, int h, Color color) {
         g.setColor(color);
         g.setStroke(new BasicStroke(1));
@@ -130,6 +235,11 @@ public final class Theme {
         }
     }
 
+    /*
+     * DEFENSE: rule
+     *
+     * Draw a horizontal separator using the shared LINE color.
+     */
     public static void rule(Graphics2D g, int x, int y, int width) {
         g.setColor(LINE);
         g.drawLine(x, y, x + width, y);

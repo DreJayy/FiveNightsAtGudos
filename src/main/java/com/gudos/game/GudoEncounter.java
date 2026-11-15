@@ -1,8 +1,33 @@
 package com.gudos.game;
 
 /** One enemy, three connected approaches. All timers use the active shift clock. */
+/*
+ * DEFENSE OVERVIEW: GudoEncounter
+ *
+ * Purpose: Implements one deterministic enemy encounter state machine and three approach routes.
+ *
+ * Follow the flow: GameSession asks untilEvent, advances that exact step, then checks caught. The UI
+ * reads location, approach, exposure/fade and attack countdown.
+ *
+ * Code-based rationale and tradeoff: routeIndex=-1 represents waiting, camera indices represent
+ * travel, atOffice represents defense, and caught is terminal. Successful flashlight exposure repels
+ * Gudo; interrupted exposure decays rather than instantly resetting.
+ *
+ * State to recognize: timer is active seconds to the next event; exposure is effective flashlight
+ * time; repelled counts successful defenses. Approach stores route, source-state name, label and
+ * target pan.
+ *
+ * Defense answer: Gudo is not moving randomly or using machine learning. Successful defenses cycle
+ * left, right, center, then left again; timing becomes harder by night.
+ */
 public final class GudoEncounter {
     // Each approach defines the CCTV route followed before reaching its office doorway.
+    /*
+     * DEFENSE TYPE: Approach
+     *
+     * Enemy route metadata: state key, displayed direction, target normalized pan and camera path.
+     * This enum is configuration, not separate polymorphic State classes.
+     */
     public enum Approach {
         LEFT("left", "LEFT / SERVICE DOOR", 0.12, new Scene[]{Scene.CAM_04, Scene.CAM_03, Scene.CAM_02}),
         RIGHT("right", "RIGHT / CORRIDOR", 0.88, new Scene[]{Scene.CAM_06, Scene.CAM_05}),
@@ -13,6 +38,12 @@ public final class GudoEncounter {
         private final double pan;
         private final Scene[] route;
 
+        /*
+         * DEFENSE: GudoEncounter constructor
+         *
+         * Retain the approach state key, readable label, normalized pan and camera route. Each enum
+         * entry supplies its own fixed metadata for the same encounter algorithm.
+         */
         Approach(String state, String label, double pan, Scene[] route) {
             this.state = state;
             this.label = label;
@@ -20,10 +51,34 @@ public final class GudoEncounter {
             this.route = route;
         }
 
+        /*
+         * DEFENSE: label
+         *
+         * Read the readable UI label. This accessor does not advance time, save data or change the
+         * model; callers use it to draw or coordinate behavior.
+         */
         public String label() { return label; }
+        /*
+         * DEFENSE: pan
+         *
+         * Read the normalized direction associated with this value. This accessor does not advance
+         * time, save data or change the model; callers use it to draw or coordinate behavior.
+         */
         public double pan() { return pan; }
+        /*
+         * DEFENSE: officeState
+         *
+         * Append -occupied to the approach state: left-occupied, right-occupied or front-occupied.
+         * These keys match the office manifest entries.
+         */
         public String officeState() { return state + "-occupied"; }
         // The flashlight is effective only inside the doorway's normalized viewing range.
+        /*
+         * DEFENSE: faces
+         *
+         * Use an approach-specific normalized viewing range: LEFT pan<=0.30, RIGHT pan>=0.70, FRONT
+         * within 0.22 of 0.50. Correct direction is required as well as holding the light.
+         */
         public boolean faces(double officePan) {
             return this == LEFT ? officePan <= 0.30 : this == RIGHT ? officePan >= 0.70 : Math.abs(officePan - 0.5) <= 0.22;
         }
@@ -40,17 +95,38 @@ public final class GudoEncounter {
     private boolean atOffice;
     private boolean caught;
 
+    /*
+     * DEFENSE: GudoEncounter constructor
+     *
+     * Store the difficulty night and begin the first wait at 18 - (night-1)*2 seconds. Initial
+     * approach is LEFT and routeIndex=-1 means no occupied room yet.
+     */
     GudoEncounter(int night) {
         this.night = night;
         timer = 18 - (night - 1) * 2;
     }
 
     /** Split at state boundaries so a long frame cannot skip an attack or a retreat. */
+    /*
+     * DEFENSE: untilEvent
+     *
+     * For an illuminated office encounter return the earlier of remaining attack time and exposure
+     * needed to repel; otherwise return timer. GameSession uses this to split its frame at the exact
+     * next state boundary.
+     */
     double untilEvent(boolean illuminated) {
         return atOffice && illuminated ? Math.min(timer, Math.max(0, flashSeconds() - exposure)) : timer;
     }
 
     // GameSession supplies steps ending at the next event. No independent wall clock is used here.
+    /*
+     * DEFENSE: advance
+     *
+     * Subtract the supplied event-bounded step from timer. At the office, add effective exposure or
+     * decay it at 0.65 per second; enough exposure repels, resets travel and cycles approach,
+     * otherwise an expired timer catches. During travel, an expired timer enters the next camera or
+     * the office. Small epsilons handle floating-point rounding.
+     */
     void advance(double seconds, boolean illuminated) {
         timer = Math.max(0, timer - seconds);
         if (atOffice) {
@@ -78,14 +154,68 @@ public final class GudoEncounter {
     }
 
     // Null means Gudo is between encounters and should not appear on any room render.
+    /*
+     * DEFENSE: location
+     *
+     * Return OFFICE during an office encounter, null during the wait between encounters, or the
+     * current route camera. A single location makes the previous room clean automatically.
+     */
     public Scene location() { return atOffice ? Scene.OFFICE : routeIndex < 0 ? null : approach.route[routeIndex]; }
+    /*
+     * DEFENSE: approach
+     *
+     * Read the current LEFT/RIGHT/FRONT approach. This accessor does not advance time, save data or
+     * change the model; callers use it to draw or coordinate behavior.
+     */
     public Approach approach() { return approach; }
+    /*
+     * DEFENSE: atOffice
+     *
+     * Read whether the enemy is currently in an office defense encounter. This accessor does not
+     * advance time, save data or change the model; callers use it to draw or coordinate behavior.
+     */
     public boolean atOffice() { return atOffice; }
+    /*
+     * DEFENSE: caught
+     *
+     * Read whether the attack deadline has expired. This accessor does not advance time, save data
+     * or change the model; callers use it to draw or coordinate behavior.
+     */
     public boolean caught() { return caught; }
+    /*
+     * DEFENSE: repelled
+     *
+     * Read the number of successful flashlight defenses. This accessor does not advance time, save
+     * data or change the model; callers use it to draw or coordinate behavior.
+     */
     public int repelled() { return repelled; }
     // Higher nights require longer flashlight exposure and allow less time before an attack.
+    /*
+     * DEFENSE: flashSeconds
+     *
+     * Require 1.6 + (night-1)*0.2 seconds of effective light: 1.6 on Night 1 through 2.4 on Night 5.
+     * Interrupted light reduces accumulated exposure.
+     */
     public double flashSeconds() { return 1.6 + (night - 1) * 0.2; }
+    /*
+     * DEFENSE: attackSeconds
+     *
+     * Allow 9 - (night-1)*0.8 seconds at the office: 9.0 on Night 1 through 5.8 on Night 5. This
+     * timer continues during ineffective or interrupted defense.
+     */
     public double attackSeconds() { return 9 - (night - 1) * 0.8; }
+    /*
+     * DEFENSE: fadeProgress
+     *
+     * While at the office, return exposure/required exposure; otherwise return zero. GamePanel uses
+     * this fraction to blend the occupied room toward the clean room.
+     */
     public double fadeProgress() { return atOffice ? exposure / flashSeconds() : 0; }
+    /*
+     * DEFENSE: attackRemaining
+     *
+     * Expose timer only for the office encounter. GamePanel uses <=3 seconds to emit one
+     * urgency/rush cue; zero outside the office is not an active attack.
+     */
     public double attackRemaining() { return atOffice ? timer : 0; }
 }
