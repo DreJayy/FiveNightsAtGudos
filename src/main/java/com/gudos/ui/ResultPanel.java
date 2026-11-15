@@ -1,3 +1,4 @@
+// Purpose: Display a shift's outcome and its save status.
 package com.gudos.ui;
 
 import com.gudos.assets.AssetManager;

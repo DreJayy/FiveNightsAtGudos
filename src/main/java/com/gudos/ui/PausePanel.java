@@ -1,3 +1,4 @@
+// Purpose: Display the paused shift and offer actions such as resuming or leaving.
 package com.gudos.ui;
 
 import com.gudos.assets.AssetManager;

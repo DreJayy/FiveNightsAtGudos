@@ -1,3 +1,4 @@
+// Purpose: Define screen and game-navigation requests that Application can handle for UI panels.
 package com.gudos.ui;
 
 import com.gudos.persistence.Settings;

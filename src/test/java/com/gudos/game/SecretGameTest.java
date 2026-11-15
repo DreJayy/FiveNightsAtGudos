@@ -1,3 +1,4 @@
+// Purpose: Test minigame rules including the timer, delivery, witnesses, and cover.
 package com.gudos.game;
 
 import com.gudos.game.minigame.SecretGame;

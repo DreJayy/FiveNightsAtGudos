@@ -1,3 +1,4 @@
+// Purpose: Test Sir Gudo's routes, attack timing, and flashlight defenses.
 package com.gudos.game;
 
 import org.junit.jupiter.api.Test;

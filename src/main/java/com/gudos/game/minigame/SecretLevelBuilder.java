@@ -1,3 +1,4 @@
+// Purpose: Build and validate a minigame level configuration step by step.
 package com.gudos.game.minigame;
 
 import java.awt.Rectangle;

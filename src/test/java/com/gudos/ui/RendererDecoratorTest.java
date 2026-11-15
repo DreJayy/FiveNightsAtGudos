@@ -1,3 +1,4 @@
+// Purpose: Test camera renderer delegation, effect composition, and reduced-effects behavior.
 package com.gudos.ui;
 
 import com.gudos.assets.AssetManager;

@@ -1,3 +1,4 @@
+// Purpose: Check that the asset manager loads and resolves the game's bundled resources.
 package com.gudos.assets;
 
 import com.gudos.audio.Sound;

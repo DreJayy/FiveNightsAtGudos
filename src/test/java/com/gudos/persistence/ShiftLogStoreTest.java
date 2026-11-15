@@ -1,3 +1,4 @@
+// Purpose: Test writing readable shift reports without duplicating saved attempts.
 package com.gudos.persistence;
 
 import com.gudos.game.GameSession;

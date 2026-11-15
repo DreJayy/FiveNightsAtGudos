@@ -1,3 +1,4 @@
+// Purpose: Project room panoramas into camera views and map displayed pixels back to the source.
 package com.gudos.assets;
 
 import java.awt.image.BufferedImage;

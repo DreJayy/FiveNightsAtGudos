@@ -1,3 +1,4 @@
+// Purpose: Provide a simple interface for playing, looping, adjusting, and stopping game audio.
 package com.gudos.audio;
 
 import com.gudos.assets.AssetManager;

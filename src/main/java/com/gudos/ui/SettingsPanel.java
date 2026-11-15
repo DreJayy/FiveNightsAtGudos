@@ -1,3 +1,4 @@
+// Purpose: Let the player edit preferences before Application applies and saves them.
 package com.gudos.ui;
 
 import com.gudos.assets.AssetManager;

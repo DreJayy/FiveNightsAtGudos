@@ -1,3 +1,4 @@
+// Purpose: Add VHS interference after drawing another scene renderer.
 package com.gudos.ui.rendering;
 
 import com.gudos.assets.AssetManager;

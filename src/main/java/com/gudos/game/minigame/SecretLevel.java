@@ -1,3 +1,4 @@
+// Purpose: Hold the minigame level configuration produced by the Builder.
 package com.gudos.game.minigame;
 
 import java.awt.Rectangle;

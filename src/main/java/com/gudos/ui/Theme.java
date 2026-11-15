@@ -1,3 +1,4 @@
+// Purpose: Share fonts, colors, and drawing helpers across the game's screens.
 package com.gudos.ui;
 
 import java.awt.*;

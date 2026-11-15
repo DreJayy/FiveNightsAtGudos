@@ -1,3 +1,4 @@
+// Purpose: Define the common drawing interface for camera renderers and their decorators.
 package com.gudos.ui.rendering;
 
 import java.awt.Graphics2D;

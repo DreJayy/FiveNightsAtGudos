@@ -1,3 +1,4 @@
+// Purpose: Draw the title screen and offer the main menu choices.
 package com.gudos.ui;
 
 import com.gudos.assets.AssetManager;

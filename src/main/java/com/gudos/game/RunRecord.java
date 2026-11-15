@@ -1,3 +1,4 @@
+// Purpose: Hold the final details of one completed shift attempt for display and saving.
 package com.gudos.game;
 
 import java.time.Instant;

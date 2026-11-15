@@ -1,3 +1,4 @@
+// Purpose: Test night-shift rules such as time, power, controls, and outcomes.
 package com.gudos.game;
 
 import org.junit.jupiter.api.Test;

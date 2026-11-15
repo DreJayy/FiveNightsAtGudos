@@ -1,3 +1,4 @@
+// Purpose: Show an animated waiting screen while another part of the app loads data.
 package com.gudos.ui;
 
 import java.awt.*;

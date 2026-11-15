@@ -1,3 +1,4 @@
+// Purpose: Display the player guide or credits screen.
 package com.gudos.ui;
 
 import com.gudos.assets.AssetManager;

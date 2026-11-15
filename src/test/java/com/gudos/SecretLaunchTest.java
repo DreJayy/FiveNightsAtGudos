@@ -1,3 +1,4 @@
+// Purpose: Test the production minigame level, including a route through its patrols.
 package com.gudos;
 
 import com.gudos.game.minigame.SecretGame;

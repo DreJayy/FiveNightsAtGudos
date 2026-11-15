@@ -1,3 +1,4 @@
+// Purpose: Test the automatic sweep calculations for CCTV cameras.
 package com.gudos.game;
 
 import org.junit.jupiter.api.Test;

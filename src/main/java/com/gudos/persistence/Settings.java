@@ -1,3 +1,4 @@
+// Purpose: Hold the player's current name, volume, and display preferences.
 package com.gudos.persistence;
 
 /** Immutable preferences; selecting another playerName selects another local database profile. */

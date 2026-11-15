@@ -1,3 +1,4 @@
+// Purpose: Manage Sir Gudo's routes, office approaches, and flashlight encounters.
 package com.gudos.game;
 
 /** One enemy, three connected approaches. All timers use the active shift clock. */

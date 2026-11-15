@@ -1,3 +1,4 @@
+// Purpose: Display the main night-shift screen and handle office, camera, and paper-click controls.
 package com.gudos.ui;
 
 import com.gudos.assets.AssetManager;

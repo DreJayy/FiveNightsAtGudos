@@ -1,3 +1,4 @@
+// Purpose: Create and migrate the SQLite database and store or retrieve player progress and runs.
 package com.gudos.persistence;
 
 import com.gudos.game.Outcome;
