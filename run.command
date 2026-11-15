@@ -2,5 +2,5 @@
 set -e
 
 cd "$(dirname "$0")"
-sh ./mvnw -q -DskipTests package
+sh ./mvnw -q package
 exec java --enable-native-access=ALL-UNNAMED -jar target/five-nights-at-gudos.jar "$@"

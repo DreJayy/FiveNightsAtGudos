@@ -11,11 +11,11 @@ The Windows launcher uses a JDK 17+ from `JAVA_HOME`, `PATH`, or common installa
 The included Maven wrapper downloads Maven and dependencies on the first build, so the first run requires internet. The built game runs completely offline:
 
 ```powershell
-.\mvnw.cmd clean verify
+.\mvnw.cmd clean package
 java --enable-native-access=ALL-UNNAMED -jar target/five-nights-at-gudos.jar
 ```
 
-On macOS, double-click **`run.command`**, or run `./run.command` in Terminal. The launcher builds the game and starts it, just like `run.cmd` on Windows. On macOS/Linux, you can also use `sh ./mvnw clean verify`, then the same `java` command. Java 17-compatible bytecode is produced even if a newer JDK is installed.
+On macOS, double-click **`run.command`**, or run `./run.command` in Terminal. The launcher builds the game and starts it, just like `run.cmd` on Windows. On macOS/Linux, you can also use `sh ./mvnw clean package`, then the same `java` command. Java 17-compatible bytecode is produced even if a newer JDK is installed.
 
 ## What's playable now
 
@@ -72,10 +72,10 @@ Change your player name in Settings to select/create a separate local profile. N
 
 Existing databases migrate to version 5, preserving profiles, progress and old runs. Completion flags left by older versions are retained but no longer restrict access to the minigame. A caught attempt begins saving while its 2.1-second jumpscare plays.
 
-For an isolated test save location:
+For an isolated demo save location:
 
 ```powershell
-java --enable-native-access=ALL-UNNAMED "-Dgudo.dataDir=target/manual-test-data" -jar target/five-nights-at-gudos.jar
+java --enable-native-access=ALL-UNNAMED "-Dgudo.dataDir=target/demo-data" -jar target/five-nights-at-gudos.jar
 ```
 
 ## Project layout
@@ -98,7 +98,6 @@ src/main/resources/
   fonts/                   Bundled VT323 pixel font
   licenses/                Downloaded asset attribution and full licenses
   config/scenes.properties Scene-to-render manifest
-src/test/java/             Game, JDBC, text-file, asset and Swing render tests
 asset-sources/audio/       44 unused source WAVs, excluded from the JAR
 docs/assets/              Preserved pack README, contact sheet and mapping
 ```
@@ -139,25 +138,19 @@ The game implements two distinct structural patterns in its own code:
 
   The outer VHS decorator accelerates only its own interference, not the wrapped rendering. Reduced visual effects bypass VHS noise and the switching chain; the room still renders. Effects are assembled once and reuse the current camera, occupancy, and shift clock on every frame. This is a custom Decorator implementation, not just the project's use of Java's `BufferedInputStream` decorator.
 
-`RendererDecoratorTest` checks delegation, composability, effect order, reduced effects, graphics-state isolation, and pixel-for-pixel compatibility with the previous CCTV drawing sequence.
+## Build
 
-## Tests
-
-`mvnw.cmd clean verify` exercises shift timing, all three enemy routes, gradual retreat and recovery, directional flashlight defense, pause, attack/morning precedence, full survival on all five nights, power failure, camera/light exclusion, camera motion, panorama projection, SQLite migration/transactions/profile isolation, text files, bundled assets and headless Swing rendering. Visual previews of occupied cameras, all three office approaches, partial fade, retreat, animated/reduced jumpscare and caught results are generated under **`target/ui-preview/`**. Audio decoding is tested without requiring a speaker/mixer.
-
-An optional real-window smoke check (uses the mouse and keyboard, so run it only when the desktop is free):
+Build the distributable from the repository root:
 
 ```powershell
-java --enable-native-access=ALL-UNNAMED "-Dgudo.dataDir=target/desktop-smoke-data" -cp "target/test-classes;target/five-nights-at-gudos.jar" com.gudos.DesktopSmoke
+.\mvnw.cmd clean package
 ```
 
-This uses isolated saves and captures only the game window under `target/desktop-preview/`.
-
-The distributable is **`target/five-nights-at-gudos.jar`**; dependencies and runtime assets are bundled. The smaller version-numbered JAR is only an intermediate build artifact, not the distributable.
+On macOS/Linux use `sh ./mvnw clean package`. The distributable is **`target/five-nights-at-gudos.jar`**; dependencies and runtime assets are bundled. The smaller version-numbered JAR is only an intermediate build artifact.
 
 ## Project reviewer
 
-The [project documentation](docs/defense/README.md) includes a **45-page LaTeX reviewer**, with file responsibilities, clickable source locations, feature demonstrations, worked examples, pattern participants and practice questions. Its XeLaTeX source is included. Detailed method comments remain beside the code, using ordinary documentation wording.
+The [project documentation](docs/defense/README.md) includes a **42-page LaTeX reviewer**, with file responsibilities, clickable source locations, feature demonstrations, worked examples, pattern participants and practice questions. Its XeLaTeX source is included. Detailed method comments remain beside the code, using ordinary documentation wording.
 
 The New Game/navigation facade is covered alongside the audio facade and renderer Decorator. The hidden level's `SecretLevelBuilder` is an additional **creational Builder**, separate from the two structural pattern types.
 

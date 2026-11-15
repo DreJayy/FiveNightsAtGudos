@@ -107,7 +107,7 @@ public final class AssetManager {
      */
     public BufferedImage noise(int frame) { return noise[Math.floorMod(frame, noise.length)]; }
     /*
-     * Return the decoded GIF frame count. Tests check the bundled static contains five distinct
+     * Return the decoded GIF frame count. The bundled static contains five distinct
      * animation frames.
      */
     public int noiseFrameCount() { return noise.length; }

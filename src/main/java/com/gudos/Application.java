@@ -365,11 +365,11 @@ public final class Application implements Navigation {
     }
 
     // Builder pattern client: specify the level step by step and finish with build(). Keeping this
-    // separate from navigation also lets tests construct the exact production level headlessly.
+    // separate from navigation allows the exact production level to be created without a window.
     /*
      * Use the Builder to create the exact production level: width 2560, player x80, bundle x240,
      * destination x2410/y510/125x130, three platforms, six cover rectangles, three patrols, and 60
-     * seconds. Tests can call this package-visible factory without opening Application.
+     * seconds. This package-visible factory constructs the level without opening Application.
      */
     static SecretLevel createSecretLevel() {
         return new SecretLevelBuilder().width(2560).player(80).bundle(240)

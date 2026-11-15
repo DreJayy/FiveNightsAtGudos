@@ -56,7 +56,7 @@ public final class GameSession {
      */
     public GameSession(int night) { this(night, SHIFT_SECONDS); }
 
-    // The custom duration allows tests to exercise a whole shift without waiting six minutes.
+    // A custom duration allows shorter or longer simulations without changing the clock rules.
     /*
      * The one-night overload delegates to the duration overload with 360 seconds. The full
      * constructor rejects a night outside 1..5 and nonfinite/nonpositive duration, then creates one

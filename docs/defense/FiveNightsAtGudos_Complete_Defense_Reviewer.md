@@ -1,8 +1,8 @@
 # Five Nights at Gudo's - Project Study Guide
 
-The PDF edition is **45 pages**, compiled with XeLaTeX. The canonical typesetting source is [FiveNightsAtGudos_Reviewer.tex](FiveNightsAtGudos_Reviewer.tex). The PDF is supplied separately with the project review.
+The PDF edition is **42 pages**, compiled with XeLaTeX. The canonical typesetting source is [FiveNightsAtGudos_Reviewer.tex](FiveNightsAtGudos_Reviewer.tex). The PDF is supplied separately with the project review.
 
-This edition covers all 59 Java files, the important algorithms and decisions, exact demonstration paths, pattern participants and 60 practice questions. Detailed explanations of all 415 explicitly declared methods/constructors remain beside the source methods as ordinary documentation.
+This edition covers all 45 application Java files, the important algorithms and decisions, exact demonstration paths, pattern participants and 60 practice questions. Detailed explanations of all 313 explicitly declared methods/constructors remain beside the source methods as ordinary documentation.
 
 ## Main ideas
 
@@ -44,19 +44,19 @@ The SQLite attempt insert and unlock update share one transaction. The readable 
 
 ### AppPaths.java
 
-**Source:** [src/main/java/com/gudos/persistence/AppPaths.java:26](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/persistence/AppPaths.java#L26)
+**Source:** [src/main/java/com/gudos/persistence/AppPaths.java:26](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/persistence/AppPaths.java#L26)
 
 Resolves writable player-data paths outside the packaged game.
 
 **Main path:** Main calls resolve; SettingsPanel displays the folder; Database, SettingsStore and ShiftLogStore use the three child paths.
 
-**Design choice:** A JAR contains read-only resources; user saves need a writable external folder. gudo.dataDir supports isolated demos/tests without changing ordinary player data.
+**Design choice:** A JAR contains read-only resources; user saves need a writable external folder. gudo.dataDir supports isolated demo runs without changing ordinary player data.
 
 **Find:** resolve; database/settings/shiftLog.
 
 ### Application.java
 
-**Source:** [src/main/java/com/gudos/Application.java:51](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/Application.java#L51)
+**Source:** [src/main/java/com/gudos/Application.java:51](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/Application.java#L51)
 
 Coordinates screens, active attempts, audio and asynchronous storage; implements the Navigation facade contract.
 
@@ -66,7 +66,7 @@ Coordinates screens, active attempts, audio and asynchronous storage; implements
 
 ### AssetManager.java
 
-**Source:** [src/main/java/com/gudos/assets/AssetManager.java:35](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/assets/AssetManager.java#L35)
+**Source:** [src/main/java/com/gudos/assets/AssetManager.java:35](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/assets/AssetManager.java#L35)
 
 Loads bundled images, the scene manifest and decoded TV-noise frames, then serves cached lookups.
 
@@ -76,19 +76,9 @@ Loads bundled images, the scene manifest and decoded TV-noise frames, then serve
 
 **Find:** constructor, resource, scene, noise/menuRender.
 
-### AssetManagerTest.java
-
-**Source:** [src/test/java/com/gudos/assets/AssetManagerTest.java:31](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/test/java/com/gudos/assets/AssetManagerTest.java#L31)
-
-JUnit checks for bundled scenes, state fallbacks, active audio, static and font.
-
-**Main path:** Construct AssetManager once; verify dimensions/distinct states; decode every Sound without a mixer; inspect PCM, duration and attribution.
-
-**Design choice:** Asset decoding can be tested without speakers. These tests prove packaging/decoding, not perceived volume on every machine.
-
 ### AudioService.java
 
-**Source:** [src/main/java/com/gudos/audio/AudioService.java:39](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/audio/AudioService.java#L39)
+**Source:** [src/main/java/com/gudos/audio/AudioService.java:39](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/audio/AudioService.java#L39)
 
 Provides the audio facade over Java Sound and a serial audio worker.
 
@@ -100,7 +90,7 @@ Provides the audio facade over Java Sound and a serial audio worker.
 
 ### BackdropPanel.java
 
-**Source:** [src/main/java/com/gudos/ui/BackdropPanel.java:26](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/BackdropPanel.java#L26)
+**Source:** [src/main/java/com/gudos/ui/BackdropPanel.java:26](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/BackdropPanel.java#L26)
 
 Shares the dim office background and navigation chrome for secondary pages.
 
@@ -112,7 +102,7 @@ Shares the dim office background and navigation chrome for secondary pages.
 
 ### CameraMotion.java
 
-**Source:** [src/main/java/com/gudos/game/CameraMotion.java:21](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/game/CameraMotion.java#L21)
+**Source:** [src/main/java/com/gudos/game/CameraMotion.java:21](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/game/CameraMotion.java#L21)
 
 Computes the automatic CCTV sweep from camera identity and active shift time.
 
@@ -122,19 +112,9 @@ Computes the automatic CCTV sweep from camera identity and active shift time.
 
 **Find:** pan.
 
-### CameraMotionTest.java
-
-**Source:** [src/test/java/com/gudos/game/CameraMotionTest.java:22](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/test/java/com/gudos/game/CameraMotionTest.java#L22)
-
-JUnit checks for independent bounded automatic camera sweeps.
-
-**Main path:** Sample all six cameras over a shift; compare phase/speed and CAM 01 repeat after 24.3 seconds; reject OFFICE.
-
-**Design choice:** Deterministic formula inputs allow exact repeatability checks without a window or a running timer.
-
 ### CameraSceneRenderer.java
 
-**Source:** [src/main/java/com/gudos/ui/rendering/CameraSceneRenderer.java:32](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/rendering/CameraSceneRenderer.java#L32)
+**Source:** [src/main/java/com/gudos/ui/rendering/CameraSceneRenderer.java:32](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/rendering/CameraSceneRenderer.java#L32)
 
 Draws the current CCTV room without VHS or switching effects.
 
@@ -146,7 +126,7 @@ Draws the current CCTV room without VHS or switching effects.
 
 ### Chiptune.java
 
-**Source:** [src/main/java/com/gudos/audio/Chiptune.java:26](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/audio/Chiptune.java#L26)
+**Source:** [src/main/java/com/gudos/audio/Chiptune.java:26](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/audio/Chiptune.java#L26)
 
 Generates only the hidden minigame audio in memory.
 
@@ -158,7 +138,7 @@ Generates only the hidden minigame audio in memory.
 
 ### Database.java
 
-**Source:** [src/main/java/com/gudos/persistence/Database.java:38](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/persistence/Database.java#L38)
+**Source:** [src/main/java/com/gudos/persistence/Database.java:38](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/persistence/Database.java#L38)
 
 Persists local profiles, unlock summaries and attempt history using SQLite/JDBC.
 
@@ -168,29 +148,9 @@ Persists local profiles, unlock summaries and attempt history using SQLite/JDBC.
 
 **Find:** constructor/migrations, connect/profile, loadProgress, saveRun/loadRuns.
 
-### DatabaseTest.java
-
-**Source:** [src/test/java/com/gudos/persistence/DatabaseTest.java:35](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/test/java/com/gudos/persistence/DatabaseTest.java#L35)
-
-JUnit integration checks against real temporary SQLite files.
-
-**Main path:** Create a fresh DB per test; save/reopen/retry/replay; test profiles, constraints, unlock cap, secret outcomes and legacy schema migrations.
-
-**Design choice:** Real JDBC catches SQL and transaction behavior. TempDir protects ordinary player data.
-
-### DesktopSmoke.java
-
-**Source:** [src/test/java/com/gudos/DesktopSmoke.java:40](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/test/java/com/gudos/DesktopSmoke.java#L40)
-
-Optional executable end-to-end check using a real game window and java.awt.Robot.
-
-**Main path:** main launches the real app with isolated saves, navigates settings/gameplay/pause/fullscreen/abandon/records/quit, and captures only the game window.
-
-**Design choice:** This is not an automatic JUnit test. It requires a display and can move the mouse/send keys; run only on a free desktop with a separate gudo.dataDir.
-
 ### DimmedRendererDecorator.java
 
-**Source:** [src/main/java/com/gudos/ui/rendering/DimmedRendererDecorator.java:25](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/rendering/DimmedRendererDecorator.java#L25)
+**Source:** [src/main/java/com/gudos/ui/rendering/DimmedRendererDecorator.java:25](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/rendering/DimmedRendererDecorator.java#L25)
 
 Adds a translucent black layer after its wrapped renderer draws.
 
@@ -202,7 +162,7 @@ Adds a translucent black layer after its wrapped renderer draws.
 
 ### ExtrasPanel.java
 
-**Source:** [src/main/java/com/gudos/ui/ExtrasPanel.java:23](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/ExtrasPanel.java#L23)
+**Source:** [src/main/java/com/gudos/ui/ExtrasPanel.java:23](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/ExtrasPanel.java#L23)
 
 Routes five text entries to secondary pages.
 
@@ -214,7 +174,7 @@ Routes five text entries to secondary pages.
 
 ### GameButton.java
 
-**Source:** [src/main/java/com/gudos/ui/GameButton.java:24](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/GameButton.java#L24)
+**Source:** [src/main/java/com/gudos/ui/GameButton.java:24](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/GameButton.java#L24)
 
 Uses a real JButton with custom visual styles and a supplied action.
 
@@ -226,7 +186,7 @@ Uses a real JButton with custom visual styles and a supplied action.
 
 ### GamePanel.java
 
-**Source:** [src/main/java/com/gudos/ui/GamePanel.java:47](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/GamePanel.java#L47)
+**Source:** [src/main/java/com/gudos/ui/GamePanel.java:47](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/GamePanel.java#L47)
 
 Translates gameplay input, draws office/CCTV/HUD and detects model transitions for audio cues.
 
@@ -236,7 +196,7 @@ Translates gameplay input, draws office/CCTV/HUD and detects model transitions f
 
 ### GameSession.java
 
-**Source:** [src/main/java/com/gudos/game/GameSession.java:28](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/game/GameSession.java#L28)
+**Source:** [src/main/java/com/gudos/game/GameSession.java:28](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/game/GameSession.java#L28)
 
 Owns the UI-independent rules and state of one normal night attempt.
 
@@ -244,19 +204,9 @@ Owns the UI-independent rules and state of one normal night attempt.
 
 **Design choice:** The simulation can run without a Swing window. It splits long frames at deadlines and defines tie priority: morning, then power failure, then encounter attack. UUID identity makes one attempt stable across save retries.
 
-### GameSessionTest.java
-
-**Source:** [src/test/java/com/gudos/game/GameSessionTest.java:23](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/test/java/com/gudos/game/GameSessionTest.java#L23)
-
-JUnit checks for normal shift rules and stable ending records.
-
-**Main path:** Drive the model directly through survival, power failure, pause, input exclusion, abandon, custom scene states and invalid inputs.
-
-**Design choice:** A custom short duration accelerates rule checks; full survival still uses 360 simulated seconds.
-
 ### GudoEncounter.java
 
-**Source:** [src/main/java/com/gudos/game/GudoEncounter.java:23](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/game/GudoEncounter.java#L23)
+**Source:** [src/main/java/com/gudos/game/GudoEncounter.java:23](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/game/GudoEncounter.java#L23)
 
 Implements one deterministic enemy encounter state machine and three approach routes.
 
@@ -266,19 +216,9 @@ Implements one deterministic enemy encounter state machine and three approach ro
 
 **Find:** untilEvent, advance, location, faces, exposure/timer accessors.
 
-### GudoEncounterTest.java
-
-**Source:** [src/test/java/com/gudos/game/GudoEncounterTest.java:23](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/test/java/com/gudos/game/GudoEncounterTest.java#L23)
-
-JUnit checks for route order, defense, timing and outcome precedence.
-
-**Main path:** Advance exact event times, defend/ignore/pause, compare coarse/fine updates and survive all five nights with reaction delay.
-
-**Design choice:** Headless deterministic tests catch boundary errors that a single visual playthrough can miss.
-
 ### InfoPanel.java
 
-**Source:** [src/main/java/com/gudos/ui/InfoPanel.java:25](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/InfoPanel.java#L25)
+**Source:** [src/main/java/com/gudos/ui/InfoPanel.java:25](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/InfoPanel.java#L25)
 
 Draws the in-game guide or credits.
 
@@ -290,7 +230,7 @@ Draws the in-game guide or credits.
 
 ### JumpscarePanel.java
 
-**Source:** [src/main/java/com/gudos/ui/JumpscarePanel.java:29](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/JumpscarePanel.java#L29)
+**Source:** [src/main/java/com/gudos/ui/JumpscarePanel.java:29](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/JumpscarePanel.java#L29)
 
 Animates the caught still and calls back once after 2.1 seconds.
 
@@ -302,7 +242,7 @@ Animates the caught still and calls back once after 2.1 seconds.
 
 ### LoadingPanel.java
 
-**Source:** [src/main/java/com/gudos/ui/LoadingPanel.java:22](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/LoadingPanel.java#L22)
+**Source:** [src/main/java/com/gudos/ui/LoadingPanel.java:22](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/LoadingPanel.java#L22)
 
 Draws a waiting message and animated dots.
 
@@ -314,7 +254,7 @@ Draws a waiting message and animated dots.
 
 ### Main.java
 
-**Source:** [src/main/java/com/gudos/Main.java:31](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/Main.java#L31)
+**Source:** [src/main/java/com/gudos/Main.java:31](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/Main.java#L31)
 
 Starts the desktop application and loads its dependencies.
 
@@ -326,7 +266,7 @@ Starts the desktop application and loads its dependencies.
 
 ### MenuPanel.java
 
-**Source:** [src/main/java/com/gudos/ui/MenuPanel.java:33](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/MenuPanel.java#L33)
+**Source:** [src/main/java/com/gudos/ui/MenuPanel.java:33](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/MenuPanel.java#L33)
 
 Displays the title menu, enabled Continue state and random portrait flicker.
 
@@ -338,7 +278,7 @@ Displays the title menu, enabled Continue state and random portrait flicker.
 
 ### Navigation.java
 
-**Source:** [src/main/java/com/gudos/ui/Navigation.java:24](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/Navigation.java#L24)
+**Source:** [src/main/java/com/gudos/ui/Navigation.java:24](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/Navigation.java#L24)
 
 Defines the small screen-facing facade contract implemented by Application.
 
@@ -350,7 +290,7 @@ Defines the small screen-facing facade contract implemented by Application.
 
 ### NightSelectPanel.java
 
-**Source:** [src/main/java/com/gudos/ui/NightSelectPanel.java:25](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/NightSelectPanel.java#L25)
+**Source:** [src/main/java/com/gudos/ui/NightSelectPanel.java:25](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/NightSelectPanel.java#L25)
 
 Shows five night buttons gated by the loaded progress.
 
@@ -362,7 +302,7 @@ Shows five night buttons gated by the loaded progress.
 
 ### Outcome.java
 
-**Source:** [src/main/java/com/gudos/game/Outcome.java:20](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/game/Outcome.java#L20)
+**Source:** [src/main/java/com/gudos/game/Outcome.java:20](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/game/Outcome.java#L20)
 
 Defines the six final result categories stored in SQLite.
 
@@ -374,7 +314,7 @@ Defines the six final result categories stored in SQLite.
 
 ### PanoramaRenderer.java
 
-**Source:** [src/main/java/com/gudos/assets/PanoramaRenderer.java:33](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/assets/PanoramaRenderer.java#L33)
+**Source:** [src/main/java/com/gudos/assets/PanoramaRenderer.java:33](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/assets/PanoramaRenderer.java#L33)
 
 Projects a wide room image into a curved-looking view and maps clicks back to source pixels.
 
@@ -384,19 +324,9 @@ Projects a wide room image into a curved-looking view and maps clicks back to so
 
 **Find:** prepare, render, sourcePoint.
 
-### PanoramaRendererTest.java
-
-**Source:** [src/test/java/com/gudos/assets/PanoramaRendererTest.java:25](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/test/java/com/gudos/assets/PanoramaRendererTest.java#L25)
-
-JUnit checks for curved projection and output reuse.
-
-**Main path:** Generate a colored gradient; compare vertical edge/center samples and left/right center pixels; check image object identity.
-
-**Design choice:** A gradient reveals sampling math without relying on a particular room photo. Reused identity proves allocation behavior.
-
 ### PausePanel.java
 
-**Source:** [src/main/java/com/gudos/ui/PausePanel.java:25](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/PausePanel.java#L25)
+**Source:** [src/main/java/com/gudos/ui/PausePanel.java:25](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/PausePanel.java#L25)
 
 Displays a frozen active attempt and routes Resume or Return to Menu.
 
@@ -408,7 +338,7 @@ Displays a frozen active attempt and routes Resume or Return to Menu.
 
 ### Progress.java
 
-**Source:** [src/main/java/com/gudos/persistence/Progress.java:21](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/persistence/Progress.java#L21)
+**Source:** [src/main/java/com/gudos/persistence/Progress.java:21](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/persistence/Progress.java#L21)
 
 Provides a loaded summary for menu, night-selection and records screens.
 
@@ -420,7 +350,7 @@ Provides a loaded summary for menu, night-selection and records screens.
 
 ### RecordsPanel.java
 
-**Source:** [src/main/java/com/gudos/ui/RecordsPanel.java:35](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/RecordsPanel.java#L35)
+**Source:** [src/main/java/com/gudos/ui/RecordsPanel.java:35](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/RecordsPanel.java#L35)
 
 Displays the current profile summary and read-only recent attempts table.
 
@@ -432,7 +362,7 @@ Displays the current profile summary and read-only recent attempts table.
 
 ### RendererDecorator.java
 
-**Source:** [src/main/java/com/gudos/ui/rendering/RendererDecorator.java:24](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/rendering/RendererDecorator.java#L24)
+**Source:** [src/main/java/com/gudos/ui/rendering/RendererDecorator.java:24](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/rendering/RendererDecorator.java#L24)
 
 Implements SceneRenderer while retaining another SceneRenderer and delegating to it.
 
@@ -442,19 +372,9 @@ Implements SceneRenderer while retaining another SceneRenderer and delegating to
 
 **Find:** constructor; render delegation.
 
-### RendererDecoratorTest.java
-
-**Source:** [src/test/java/com/gudos/ui/RendererDecoratorTest.java:39](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/test/java/com/gudos/ui/RendererDecoratorTest.java#L39)
-
-JUnit checks for the custom structural Decorator implementation.
-
-**Main path:** Compose wrappers around a test room; count delegation; compare pixels, effect order, reduced mode, graphics state and invalid configuration.
-
-**Design choice:** Behavior/pixel tests prove these objects are used as real composable wrappers, not just pattern names in comments.
-
 ### ResultPanel.java
 
-**Source:** [src/main/java/com/gudos/ui/ResultPanel.java:28](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/ResultPanel.java#L28)
+**Source:** [src/main/java/com/gudos/ui/ResultPanel.java:28](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/ResultPanel.java#L28)
 
 Displays an ended RunRecord and the pending/saved/failed storage status.
 
@@ -466,7 +386,7 @@ Displays an ended RunRecord and the pending/saved/failed storage status.
 
 ### RunRecord.java
 
-**Source:** [src/main/java/com/gudos/game/RunRecord.java:23](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/game/RunRecord.java#L23)
+**Source:** [src/main/java/com/gudos/game/RunRecord.java:23](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/game/RunRecord.java#L23)
 
 Carries the immutable snapshot of one ended attempt.
 
@@ -478,7 +398,7 @@ Carries the immutable snapshot of one ended attempt.
 
 ### Scene.java
 
-**Source:** [src/main/java/com/gudos/game/Scene.java:22](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/game/Scene.java#L22)
+**Source:** [src/main/java/com/gudos/game/Scene.java:22](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/game/Scene.java#L22)
 
 Defines the office and six canonical camera rooms.
 
@@ -490,7 +410,7 @@ Defines the office and six canonical camera rooms.
 
 ### ScenePanel.java
 
-**Source:** [src/main/java/com/gudos/ui/ScenePanel.java:30](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/ScenePanel.java#L30)
+**Source:** [src/main/java/com/gudos/ui/ScenePanel.java:30](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/ScenePanel.java#L30)
 
 Provides a common scaled scene, real Swing component layout and keyboard routing.
 
@@ -502,7 +422,7 @@ Provides a common scaled scene, real Swing component layout and keyboard routing
 
 ### SceneRenderer.java
 
-**Source:** [src/main/java/com/gudos/ui/rendering/SceneRenderer.java:24](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/rendering/SceneRenderer.java#L24)
+**Source:** [src/main/java/com/gudos/ui/rendering/SceneRenderer.java:24](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/rendering/SceneRenderer.java#L24)
 
 Defines the component interface shared by a room renderer and all custom renderer decorators.
 
@@ -514,7 +434,7 @@ Defines the component interface shared by a room renderer and all custom rendere
 
 ### SecretGame.java
 
-**Source:** [src/main/java/com/gudos/game/minigame/SecretGame.java:31](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/game/minigame/SecretGame.java#L31)
+**Source:** [src/main/java/com/gudos/game/minigame/SecretGame.java:31](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/game/minigame/SecretGame.java#L31)
 
 Runs the hidden platformer rules without owning Swing or audio.
 
@@ -524,29 +444,9 @@ Runs the hidden platformer rules without owning Swing or audio.
 
 **Find:** action, jump, update, bundleHidden/witnessBeam.
 
-### SecretGameTest.java
-
-**Source:** [src/test/java/com/gudos/game/SecretGameTest.java:26](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/test/java/com/gudos/game/SecretGameTest.java#L26)
-
-JUnit checks for pickup timer, delivery, hiding, patrol beams and wider-world movement.
-
-**Main path:** Build small test levels; simulate before/after pickup; carry/drop/hide/deliver; make each patrol independently dangerous.
-
-**Design choice:** Small controlled configurations isolate one rule per test. They do not replace the production level playability test.
-
-### SecretLaunchTest.java
-
-**Source:** [src/test/java/com/gudos/SecretLaunchTest.java:27](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/test/java/com/gudos/SecretLaunchTest.java#L27)
-
-JUnit checks for the production minigame configuration and an actually winnable timed route.
-
-**Main path:** Build Application.createSecretLevel; sample witness beams; search walk/wait choices; replay a safe route and deliver. Also construct/paint the production panel on EDT.
-
-**Design choice:** A path-existence check catches an impossible three-patrol layout. This is a test search algorithm, not gameplay AI.
-
 ### SecretLevel.java
 
-**Source:** [src/main/java/com/gudos/game/minigame/SecretLevel.java:25](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/game/minigame/SecretLevel.java#L25)
+**Source:** [src/main/java/com/gudos/game/minigame/SecretLevel.java:25](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/game/minigame/SecretLevel.java#L25)
 
 Stores the level configuration produced by SecretLevelBuilder.
 
@@ -558,7 +458,7 @@ Stores the level configuration produced by SecretLevelBuilder.
 
 ### SecretLevelBuilder.java
 
-**Source:** [src/main/java/com/gudos/game/minigame/SecretLevelBuilder.java:30](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/game/minigame/SecretLevelBuilder.java#L30)
+**Source:** [src/main/java/com/gudos/game/minigame/SecretLevelBuilder.java:30](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/game/minigame/SecretLevelBuilder.java#L30)
 
 Constructs a SecretLevel step by step through a fluent Builder.
 
@@ -568,19 +468,9 @@ Constructs a SecretLevel step by step through a fluent Builder.
 
 **Find:** fluent part methods; build.
 
-### SecretNavigationSmoke.java
-
-**Source:** [src/test/java/com/gudos/SecretNavigationSmoke.java:39](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/test/java/com/gudos/SecretNavigationSmoke.java#L39)
-
-Optional integration executable for the paper trigger and secret-result restart pipeline.
-
-**Main path:** Create isolated SQLite/profile/legacy flags; construct Application with an undisplayed JFrame; compute a real paper hit; issue five clicks; verify SecretPanel is active and both outcomes save/restart Night 1.
-
-**Design choice:** Reflection exposes coordinator state only in this diagnostic. It avoids Robot input but still constructs JFrame, so it needs a display environment.
-
 ### SecretPanel.java
 
-**Source:** [src/main/java/com/gudos/ui/SecretPanel.java:35](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/SecretPanel.java#L35)
+**Source:** [src/main/java/com/gudos/ui/SecretPanel.java:35](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/SecretPanel.java#L35)
 
 Controls and renders the scrolling pixel-art minigame.
 
@@ -592,7 +482,7 @@ Controls and renders the scrolling pixel-art minigame.
 
 ### Settings.java
 
-**Source:** [src/main/java/com/gudos/persistence/Settings.java:21](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/persistence/Settings.java#L21)
+**Source:** [src/main/java/com/gudos/persistence/Settings.java:21](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/persistence/Settings.java#L21)
 
 Validates and carries immutable user preferences.
 
@@ -604,7 +494,7 @@ Validates and carries immutable user preferences.
 
 ### SettingsPanel.java
 
-**Source:** [src/main/java/com/gudos/ui/SettingsPanel.java:39](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/SettingsPanel.java#L39)
+**Source:** [src/main/java/com/gudos/ui/SettingsPanel.java:39](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/SettingsPanel.java#L39)
 
 Edits preferences in real Swing controls and submits an immutable Settings value.
 
@@ -616,7 +506,7 @@ Edits preferences in real Swing controls and submits an immutable Settings value
 
 ### SettingsStore.java
 
-**Source:** [src/main/java/com/gudos/persistence/SettingsStore.java:32](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/persistence/SettingsStore.java#L32)
+**Source:** [src/main/java/com/gudos/persistence/SettingsStore.java:32](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/persistence/SettingsStore.java#L32)
 
 Reads and replaces the UTF-8 settings.txt preferences file.
 
@@ -626,19 +516,9 @@ Reads and replaces the UTF-8 settings.txt preferences file.
 
 **Find:** load, booleanValue, save.
 
-### SettingsStoreTest.java
-
-**Source:** [src/test/java/com/gudos/persistence/SettingsStoreTest.java:27](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/test/java/com/gudos/persistence/SettingsStoreTest.java#L27)
-
-JUnit checks for real UTF-8 preferences and normalization.
-
-**Main path:** Create defaults, round-trip a name with ñ, load malformed values, and test line/control stripping plus bounds.
-
-**Design choice:** A text-file round trip verifies actual bytes as well as equality. Validation is tested without the form.
-
 ### ShiftLogStore.java
 
-**Source:** [src/main/java/com/gudos/persistence/ShiftLogStore.java:32](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/persistence/ShiftLogStore.java#L32)
+**Source:** [src/main/java/com/gudos/persistence/ShiftLogStore.java:32](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/persistence/ShiftLogStore.java#L32)
 
 Appends a readable one-line report for each ended attempt.
 
@@ -648,19 +528,9 @@ Appends a readable one-line report for each ended attempt.
 
 **Find:** append.
 
-### ShiftLogStoreTest.java
-
-**Source:** [src/test/java/com/gudos/persistence/ShiftLogStoreTest.java:28](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/test/java/com/gudos/persistence/ShiftLogStoreTest.java#L28)
-
-JUnit check for appending separate attempts and deduplicating a retry.
-
-**Main path:** Append a completed run twice, append an abandoned run once, then check two lines and readable fields.
-
-**Design choice:** The repeated UUID must not produce a second ordinary retry line. UTF-8 names and duration labels are checked.
-
 ### Sound.java
 
-**Source:** [src/main/java/com/gudos/audio/Sound.java:21](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/audio/Sound.java#L21)
+**Source:** [src/main/java/com/gudos/audio/Sound.java:21](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/audio/Sound.java#L21)
 
 Names each cue and stores its classpath path and relative gain.
 
@@ -672,7 +542,7 @@ Names each cue and stores its classpath path and relative gain.
 
 ### Theme.java
 
-**Source:** [src/main/java/com/gudos/ui/Theme.java:25](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/Theme.java#L25)
+**Source:** [src/main/java/com/gudos/ui/Theme.java:25](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/Theme.java#L25)
 
 Centralizes the bundled pixel font, colors and reusable drawing utilities.
 
@@ -682,19 +552,9 @@ Centralizes the bundled pixel font, colors and reusable drawing utilities.
 
 **Find:** font helpers, text/paragraph/ellipsize, cover/contain, quality/vignette.
 
-### UiRenderTest.java
-
-**Source:** [src/test/java/com/gudos/ui/UiRenderTest.java:44](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/test/java/com/gudos/ui/UiRenderTest.java#L44)
-
-JUnit checks for real Swing panels rendered headlessly and their input/audio contracts.
-
-**Main path:** Construct panels on EDT, lay out desktop/small sizes, click real buttons or invoke named actions, advance models and compare states/pixels/callbacks.
-
-**Design choice:** Headless painting checks controls/layout/effect logic without an actual screen. It does not prove native focus/fullscreen/physical audio.
-
 ### VhsOverlay.java
 
-**Source:** [src/main/java/com/gudos/ui/VhsOverlay.java:25](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/VhsOverlay.java#L25)
+**Source:** [src/main/java/com/gudos/ui/VhsOverlay.java:25](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/VhsOverlay.java#L25)
 
 Draws animated noise, scanlines and a rolling band as a visual utility.
 
@@ -706,7 +566,7 @@ Draws animated noise, scanlines and a rolling band as a visual utility.
 
 ### VhsRendererDecorator.java
 
-**Source:** [src/main/java/com/gudos/ui/rendering/VhsRendererDecorator.java:27](https://github.com/itsnold/FiveNightsAtGudos/blob/38bad49955420cd2dddab0fbae81f2d891a84e75/src/main/java/com/gudos/ui/rendering/VhsRendererDecorator.java#L27)
+**Source:** [src/main/java/com/gudos/ui/rendering/VhsRendererDecorator.java:27](https://github.com/itsnold/FiveNightsAtGudos/blob/e9f0ff45350572e7ba5fd0ff6185ab1251514e2f/src/main/java/com/gudos/ui/rendering/VhsRendererDecorator.java#L27)
 
 Adds optional VHS interference after its wrapped renderer draws.
 
@@ -938,9 +798,9 @@ Normal close/quit asks and waits to save an active abandoned attempt. Force-kill
 
 The failed cue is remembered and playback returns without stopping gameplay.
 
-### 56. Which tests prove the project works?
+### 56. How are resources packaged for offline play?
 
-There are rule, resource, JDBC/text-file and headless Swing tests, plus separate optional real-window smoke executables.
+Maven Shade bundles dependencies and runtime resources into the distributable JAR. AssetManager uses classpath resource lookup, so the built game does not download assets while playing.
 
 ### 57. Where should a new camera image/state be added?
 
@@ -948,7 +808,7 @@ Put the image under the resources image folder, add a scene.state mapping in sce
 
 ### 58. How would you add another enemy?
 
-It would require extending the model for multiple independent encounters/occupancy and then adapting rendering, cues and tests.
+It would require extending the model for multiple independent encounters/occupancy and then adapting rendering, cues and state updates.
 
 ### 59. What are the main limitations?
 
@@ -956,8 +816,8 @@ Local-only profiles, no mid-shift restore, one deterministic enemy, hardware-dep
 
 ### 60. How do you know the added comments did not change the game?
 
-All 59 Java files retain identical parsed executable syntax, and all 70 compiled production class files match the original byte-for-byte with debug metadata disabled.
+All 45 application Java files retain identical parsed executable syntax, and all 70 compiled production class files match the original byte-for-byte with debug metadata disabled.
 
 ## Validation and snapshot
 
-Source links pin to `38bad49955420cd2dddab0fbae81f2d891a84e75`. Gameplay logic is unchanged by the documentation edits. Syntax comparison covers all 59 Java files; 70 production class files match original bytes with debug metadata disabled (available JDK 21 compiler, source/target 17). The complete Maven verification could not download dependencies because the Maven host was unreachable, so no full passing test run is claimed. Screenshots are real headless Swing renders with controlled model state, not certification of native display or speaker behavior.
+Source links pin to `e9f0ff45350572e7ba5fd0ff6185ab1251514e2f`. Gameplay logic is unchanged by the documentation edits. Syntax comparison covers all 45 application Java files; 70 production class files match original bytes with debug metadata disabled (available JDK 21 compiler, source/target 17). The complete Maven verification could not download dependencies because the Maven host was unreachable, so no complete Maven package is claimed. Screenshots are real headless Swing renders with controlled model state, not certification of native display or speaker behavior.
