@@ -2,20 +2,20 @@ package com.gudos.audio;
 
 /** Named cues have gains relative to master volume; a null path means Chiptune synthesizes them. */
 /*
- * DEFENSE OVERVIEW: Sound
+ * Sound
  *
  * Purpose: Names each cue and stores its classpath path and relative gain.
  *
- * Follow the flow: GamePanel/SecretPanel/Application choose a Sound enum; AudioService reads path
+ * Execution flow: GamePanel/SecretPanel/Application choose a Sound enum; AudioService reads path
  * and gain.
  *
- * Code-based rationale and tradeoff: Enum values avoid scattered filename strings. Master volume and
+ * Design rationale: Enum values avoid scattered filename strings. Master volume and
  * per-sound gain are separate. Null paths mark the three Chiptune sounds.
  *
- * State to recognize: path is prefixed with /audio/ for WAVs; gain scales the master volume. The
+ * State: path is prefixed with /audio/ for WAVs; gain scales the master volume. The
  * active cue list is this enum, not every file in asset-sources.
  *
- * Defense answer: Sound is metadata, AudioService performs playback, and GamePanel decides when
+ * Summary: Sound is metadata, AudioService performs playback, and GamePanel decides when
  * gameplay cues should occur.
  */
 public enum Sound {
@@ -57,22 +57,16 @@ public enum Sound {
     private final float gain;
 
     /*
-     * DEFENSE: Sound constructor
-     *
      * Store a null path for synthesized secret cues or prefix a WAV path with /audio/. Retain
      * relative gain; AudioService later combines it with master volume.
      */
     Sound(String path, float gain) { this.path = path == null ? null : "/audio/" + path; this.gain = gain; }
     /*
-     * DEFENSE: path
-     *
      * Read the resource path, or null for a synthesized secret cue. This accessor does not advance
      * time, save data or change the model; callers use it to draw or coordinate behavior.
      */
     public String path() { return path; }
     /*
-     * DEFENSE: gain
-     *
      * Read the sound multiplier relative to master volume. This accessor does not advance time, save
      * data or change the model; callers use it to draw or coordinate behavior.
      */

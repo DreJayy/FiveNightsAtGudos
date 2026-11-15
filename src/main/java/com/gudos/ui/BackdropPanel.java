@@ -7,36 +7,32 @@ import java.awt.*;
 
 /** Common dim office background, page headings, and back navigation for secondary screens. */
 /*
- * DEFENSE OVERVIEW: BackdropPanel
+ * BackdropPanel
  *
  * Purpose: Shares the dim office background and navigation chrome for secondary pages.
  *
- * Follow the flow: Extras, settings, guide/credits, selection, pause, records and result reuse
+ * Execution flow: Extras, settings, guide/credits, selection, pause, records and result reuse
  * backdrop or pageChrome.
  *
- * Code-based rationale and tradeoff: Avoid duplicating the same drawing and Back binding. It is an
+ * Design rationale: Avoid duplicating the same drawing and Back binding. It is an
  * abstract base class; inheritance alone is not the custom Decorator pattern.
  *
- * State to recognize: assets is inherited by secondary screens; pageChrome draws heading, subtitle
+ * State: assets is inherited by secondary screens; pageChrome draws heading, subtitle
  * and version.
  *
- * Defense answer: Back and Escape request navigation.menu. This implementation returns to the title
+ * Summary: Back and Escape request navigation.menu. This implementation returns to the title
  * menu, even when the page was opened through Extras.
  */
 public abstract class BackdropPanel extends ScenePanel {
     protected final AssetManager assets;
 
     /*
-     * DEFENSE: BackdropPanel constructor
-     *
      * Pass through ScenePanel initialization and retain the shared AssetManager for secondary-screen
      * backgrounds.
      */
     protected BackdropPanel(AssetManager assets) { this.assets = assets; }
 
     /*
-     * DEFENSE: backdrop
-     *
      * Fill black, draw the clean office as a cover image, then add a heavy black tint. It is a fixed
      * background for secondary screens, not a live GameSession view.
      */
@@ -49,8 +45,6 @@ public abstract class BackdropPanel extends ScenePanel {
     }
 
     /*
-     * DEFENSE: pageChrome
-     *
      * Reuse the backdrop, then draw heading/subtitle/version at consistent logical coordinates.
      * Subclasses add their page-specific controls/content.
      */
@@ -63,8 +57,6 @@ public abstract class BackdropPanel extends ScenePanel {
 
     // Both the Back button and Escape request the menu through the same navigation interface.
     /*
-     * DEFENSE: backButton
-     *
      * Install the Back GameButton and Escape binding, both pointing to navigation.menu. They return
      * to the title menu rather than to the previous Extras card.
      */

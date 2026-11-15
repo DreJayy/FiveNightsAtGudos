@@ -20,20 +20,20 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
- * DEFENSE OVERVIEW: RendererDecoratorTest
+ * RendererDecoratorTest
  *
  * Purpose: JUnit checks for the custom structural Decorator implementation.
  *
- * Follow the flow: Compose wrappers around a test room; count delegation; compare pixels, effect
+ * Execution flow: Compose wrappers around a test room; count delegation; compare pixels, effect
  * order, reduced mode, graphics state and invalid configuration.
  *
- * Code-based rationale and tradeoff: Behavior/pixel tests prove these objects are used as real
+ * Design rationale: Behavior/pixel tests prove these objects are used as real
  * composable wrappers, not just pattern names in comments.
  *
- * State to recognize: WHITE_ROOM is a simple component test double; render/pixels expose image
+ * State: WHITE_ROOM is a simple component test double; render/pixels expose image
  * results for assertions.
  *
- * Defense answer: A wrapper must preserve the room, delegate once and add its layer without leaking
+ * Summary: A wrapper must preserve the room, delegate once and add its layer without leaking
  * its own graphics state.
  */
 class RendererDecoratorTest {
@@ -44,15 +44,11 @@ class RendererDecoratorTest {
     };
 
     /*
-     * DEFENSE: load
-     *
      * Load bundled assets once before the suite so wrappers can use real TV-noise frames.
      */
     @BeforeAll static void load() throws Exception { assets = new AssetManager(); }
 
     /*
-     * DEFENSE: nestedDecoratorsDelegateExactlyOnceWithTheOriginalFrameContext
-     *
      * Wrap a counting component with dim/VHS and assert one base call receives original time and
      * reduced flag, even when the outer VHS speed is three.
      */
@@ -70,8 +66,6 @@ class RendererDecoratorTest {
     }
 
     /*
-     * DEFENSE: reducedEffectsAndZeroOpacityKeepTheWrappedRendering
-     *
      * Compare plain white pixels with VHS in reduced mode and opacity zero; both must retain exactly
      * the underlying rendering.
      */
@@ -82,8 +76,6 @@ class RendererDecoratorTest {
     }
 
     /*
-     * DEFENSE: vhsAddsAnimatedInterferenceAndDimmingAddsDarkness
-     *
      * Compare pixels across time for VHS and assert alpha128 black over white gives gray127. This
      * proves real added effects.
      */
@@ -97,8 +89,6 @@ class RendererDecoratorTest {
     }
 
     /*
-     * DEFENSE: decoratorOrderControlsTheLayerOrder
-     *
      * Compare dim-then-VHS with VHS-then-dim and require different pixels. Composition order is
      * observable behavior.
      */
@@ -111,8 +101,6 @@ class RendererDecoratorTest {
     }
 
     /*
-     * DEFENSE: effectsDoNotLeakGraphicsSettingsIntoTheHud
-     *
      * Set paint/composite/hints, run wrappers around a no-op component, then require all those
      * incoming states unchanged. Copied graphics contexts isolate effect settings.
      */
@@ -139,8 +127,6 @@ class RendererDecoratorTest {
     }
 
     /*
-     * DEFENSE: cameraDecoratorsMatchThePreviousEffectsAndFollowCameraChanges
-     *
      * Build the real camera chains and compare them pixel-for-pixel with the prior explicit drawing
      * sequence across camera/state/reduced/switch combinations.
      */
@@ -177,8 +163,6 @@ class RendererDecoratorTest {
     }
 
     /*
-     * DEFENSE: constructorsRejectInvalidDecoratorConfiguration
-     *
      * Assert null wrapped components and invalid alpha/opacity/speed values are rejected before
      * rendering.
      */
@@ -194,8 +178,6 @@ class RendererDecoratorTest {
     }
 
     /*
-     * DEFENSE: render
-     *
      * Render a SceneRenderer into a fresh test image with shared quality hints and dispose
      * Graphics2D in finally.
      */
@@ -212,8 +194,6 @@ class RendererDecoratorTest {
     }
 
     /*
-     * DEFENSE: pixels
-     *
      * Return the test image integer backing array for exact pixel comparisons.
      */
     private static int[] pixels(BufferedImage image) { return ((DataBufferInt) image.getRaster().getDataBuffer()).getData(); }

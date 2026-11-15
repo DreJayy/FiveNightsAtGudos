@@ -5,24 +5,22 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
- * DEFENSE OVERVIEW: CameraMotionTest
+ * CameraMotionTest
  *
  * Purpose: JUnit checks for independent bounded automatic camera sweeps.
  *
- * Follow the flow: Sample all six cameras over a shift; compare phase/speed and CAM 01 repeat after
+ * Execution flow: Sample all six cameras over a shift; compare phase/speed and CAM 01 repeat after
  * 24.3 seconds; reject OFFICE.
  *
- * Code-based rationale and tradeoff: Deterministic formula inputs allow exact repeatability checks
+ * Design rationale: Deterministic formula inputs allow exact repeatability checks
  * without a window or a running timer.
  *
- * State to recognize: No sleeps are needed; tests supply elapsed seconds directly.
+ * State: No sleeps are needed; tests supply elapsed seconds directly.
  *
- * Defense answer: Each camera moves in bounds and has a different phase/period.
+ * Summary: Each camera moves in bounds and has a different phase/period.
  */
 class CameraMotionTest {
     /*
-     * DEFENSE: everyCameraSweepsAutomaticallyWithinThePanorama
-     *
      * For six feeds compare time zero versus seven seconds, then sample 360 seconds and assert the
      * pan remains near 0.04..0.96.
      */
@@ -38,8 +36,6 @@ class CameraMotionTest {
     }
 
     /*
-     * DEFENSE: camerasHaveIndependentPhasesAndPeriods
-     *
      * Compare two camera phases, assert CAM 01 repeats after its 24.3-second period, and reject
      * trying to sweep OFFICE.
      */

@@ -10,27 +10,27 @@ import java.util.List;
  * beyond the 1280-wide viewport, and SecretPanel chooses which part of the world is visible.
  */
 /*
- * DEFENSE OVERVIEW: SecretGame
+ * SecretGame
  *
  * Purpose: Runs the hidden platformer rules without owning Swing or audio.
  *
- * Follow the flow: SecretPanel calls jump/action/update and draws read-only model values. The model
+ * Execution flow: SecretPanel calls jump/action/update and draws read-only model values. The model
  * integrates motion, patrols, bundle visibility and the pickup-triggered timer.
  *
- * Code-based rationale and tradeoff: Twenty-millisecond substeps reduce missed collisions. Witnesses
+ * Design rationale: Twenty-millisecond substeps reduce missed collisions. Witnesses
  * detect the bundle center, not the player body. The same beam polygon is used for drawing and
  * detection.
  *
- * State to recognize: State is PLAYING/WON/LOST; x/y/vy are player position and vertical velocity;
+ * State: State is PLAYING/WON/LOST; x/y/vy are player position and vertical velocity;
  * started never resets after pickup; witnesses each have a patrol and direction. BEAM_LENGTH=140;
  * speed=190, gravity=1450, jump velocity=-600.
  *
- * Defense answer: Explore freely before first pickup. Then the timer keeps running even after
+ * Summary: Explore freely before first pickup. Then the timer keeps running even after
  * dropping or hiding the bundle. Carry it into the destination and press E to win.
  */
 public final class SecretGame {
     /*
-     * DEFENSE TYPE: State
+     * State
      *
      * Finite minigame outcome values PLAYING, WON and LOST. This is a state machine representation,
      * not the full GoF State object pattern.
@@ -47,7 +47,7 @@ public final class SecretGame {
     private final List<Witness> witnesses = new ArrayList<>();
     // Each runtime witness has its own changing position/direction and a fixed builder-defined route.
     /*
-     * DEFENSE TYPE: Witness
+     * Witness
      *
      * Private changing patrol state for one runtime witness: immutable Patrol reference, current x
      * and facing-right flag.
@@ -57,8 +57,6 @@ public final class SecretGame {
         double x;
         boolean right = true;
         /*
-         * DEFENSE: SecretGame constructor
-         *
          * Retain this patrol and start the witness at its left endpoint facing right. Each created
          * Witness changes position independently during update.
          */
@@ -67,8 +65,6 @@ public final class SecretGame {
     private State state = State.PLAYING;
 
     /*
-     * DEFENSE: SecretGame constructor
-     *
      * Receive the completed SecretLevel product, initialize player/bundle positions and countdown,
      * and create separate runtime Witness objects for its patrols. started remains false until the
      * first successful pickup.
@@ -81,8 +77,6 @@ public final class SecretGame {
 
     // A negative vertical velocity launches Gudo upward; only a grounded player may jump.
     /*
-     * DEFENSE: jump
-     *
      * Accept only PLAYING and grounded; set vertical velocity to -600 and clear grounded. Negative y
      * velocity moves up in this coordinate system; holding Space is separately debounced by
      * SecretPanel.
@@ -90,8 +84,6 @@ public final class SecretGame {
     public void jump() { if (state == State.PLAYING && grounded) { vy = -600; grounded = false; } }
     /** E-key action: deliver first, otherwise drop what is carried or pick up a nearby bundle. */
     /*
-     * DEFENSE: action
-     *
      * Ignore ended games. If carrying and the player delivery point is inside destination, win
      * before considering drop. Otherwise drop the carried bundle at the player or pick up a nearby
      * one within the distance thresholds. Pickup sets started permanently, so re-pickup never resets
@@ -110,8 +102,6 @@ public final class SecretGame {
     }
     /** Advance active play by elapsed seconds; the UI skips this call while paused or transitioning. */
     /*
-     * DEFENSE: update
-     *
      * While PLAYING, divide elapsed input into <=0.02-second steps. If started, subtract countdown
      * and lose at zero; update horizontal movement, gravity, ground/platform landings,
      * dropped-bundle falling and independent patrols. Then test the carried/dropped bundle center
@@ -158,106 +148,76 @@ public final class SecretGame {
     }
     // Read-only accessors let the UI draw the current model without controlling its rules.
     /*
-     * DEFENSE: level
-     *
      * Read the configuration product used by this minigame. This accessor does not advance time,
      * save data or change the model; callers use it to draw or coordinate behavior.
      */
     public SecretLevel level() { return level; }
     /*
-     * DEFENSE: x
-     *
      * Read the player horizontal world position. This accessor does not advance time, save data or
      * change the model; callers use it to draw or coordinate behavior.
      */
     public double x() { return x; }
     /*
-     * DEFENSE: y
-     *
      * Read the player top-left vertical position. This accessor does not advance time, save data or
      * change the model; callers use it to draw or coordinate behavior.
      */
     public double y() { return y; }
     /*
-     * DEFENSE: bundleX
-     *
      * Read the dropped bundle horizontal world anchor. This accessor does not advance time, save
      * data or change the model; callers use it to draw or coordinate behavior.
      */
     public double bundleX() { return bundleX; }
     /*
-     * DEFENSE: bundleY
-     *
      * Read the dropped bundle vertical world anchor. This accessor does not advance time, save data
      * or change the model; callers use it to draw or coordinate behavior.
      */
     public double bundleY() { return bundleY; }
     /*
-     * DEFENSE: witnessCount
-     *
      * Read the number of independently simulated patrol witnesses. This accessor does not advance
      * time, save data or change the model; callers use it to draw or coordinate behavior.
      */
     public int witnessCount() { return witnesses.size(); }
     /*
-     * DEFENSE: witnessX
-     *
      * Read the stored/computed value witnessX(0). This accessor does not advance time, save data or
      * change the model; callers use it to draw or coordinate behavior.
      */
     public double witnessX() { return witnessX(0); }
     /*
-     * DEFENSE: witnessRight
-     *
      * Read the stored/computed value witnessRight(0). This accessor does not advance time, save data
      * or change the model; callers use it to draw or coordinate behavior.
      */
     public boolean witnessRight() { return witnessRight(0); }
     /*
-     * DEFENSE: witnessX
-     *
      * Read the selected witness horizontal world position. This accessor does not advance time, save
      * data or change the model; callers use it to draw or coordinate behavior.
      */
     public double witnessX(int index) { return witnesses.get(index).x; }
     /*
-     * DEFENSE: witnessRight
-     *
      * Read the selected witness facing direction. This accessor does not advance time, save data or
      * change the model; callers use it to draw or coordinate behavior.
      */
     public boolean witnessRight(int index) { return witnesses.get(index).right; }
     /*
-     * DEFENSE: remaining
-     *
      * Read the remaining pickup-triggered countdown seconds. This accessor does not advance time,
      * save data or change the model; callers use it to draw or coordinate behavior.
      */
     public double remaining() { return remaining; }
     /*
-     * DEFENSE: started
-     *
      * Read whether a first bundle pickup has happened. This accessor does not advance time, save
      * data or change the model; callers use it to draw or coordinate behavior.
      */
     public boolean started() { return started; }
     /*
-     * DEFENSE: carrying
-     *
      * Read whether the player currently carries the bundle. This accessor does not advance time,
      * save data or change the model; callers use it to draw or coordinate behavior.
      */
     public boolean carrying() { return carrying; }
     /*
-     * DEFENSE: state
-     *
      * Read the current minigame outcome state. This accessor does not advance time, save data or
      * change the model; callers use it to draw or coordinate behavior.
      */
     public State state() { return state; }
     /*
-     * DEFENSE: grounded
-     *
      * Read whether a jump is currently allowed by ground/platform contact. This accessor does not
      * advance time, save data or change the model; callers use it to draw or coordinate behavior.
      */
@@ -265,8 +225,6 @@ public final class SecretGame {
 
     /** The bundle's center determines whether foreground cover hides it from witnesses. */
     /*
-     * DEFENSE: bundleHidden
-     *
      * Calculate the bundle center from the carrying or dropped position and test whether any cover
      * Rectangle contains it. The player alone is irrelevant to witness detection; cover works for
      * carried and dropped bundles.
@@ -280,16 +238,12 @@ public final class SecretGame {
     /** Triangle anchored at the witness's light, pointing in the current patrol direction.
      * SecretPanel draws this same polygon, so the shown light and the detection area agree. */
     /*
-     * DEFENSE: witnessBeam
-     *
      * The no-index overload forwards to witness zero. The indexed overload creates the same
      * triangular beam used by both collision and rendering: origin at witness x/y620, far edge 140
      * units in its facing direction, spanning y550..650. This avoids a visual/rule mismatch.
      */
     public Polygon witnessBeam() { return witnessBeam(0); }
     /*
-     * DEFENSE: witnessBeam
-     *
      * The no-index overload forwards to witness zero. The indexed overload creates the same
      * triangular beam used by both collision and rendering: origin at witness x/y620, far edge 140
      * units in its facing direction, spanning y550..650. This avoids a visual/rule mismatch.

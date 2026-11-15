@@ -16,20 +16,20 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
- * DEFENSE OVERVIEW: DatabaseTest
+ * DatabaseTest
  *
  * Purpose: JUnit integration checks against real temporary SQLite files.
  *
- * Follow the flow: Create a fresh DB per test; save/reopen/retry/replay; test profiles, constraints,
+ * Execution flow: Create a fresh DB per test; save/reopen/retry/replay; test profiles, constraints,
  * unlock cap, secret outcomes and legacy schema migrations.
  *
- * Code-based rationale and tradeoff: Real JDBC catches SQL and transaction behavior. TempDir
+ * Design rationale: Real JDBC catches SQL and transaction behavior. TempDir
  * protects ordinary player data.
  *
- * State to recognize: completed builds a short finished session. create runs before each test;
+ * State: completed builds a short finished session. create runs before each test;
  * directory is injected by JUnit.
  *
- * Defense answer: An invalid attempt must not unlock a night; retries must not duplicate; migration
+ * Summary: An invalid attempt must not unlock a night; retries must not duplicate; migration
  * must retain old rows/progress.
  */
 class DatabaseTest {
@@ -37,16 +37,12 @@ class DatabaseTest {
     private Database database;
 
     /*
-     * DEFENSE: create
-     *
      * Before each test open a fresh temporary SQLite file. Each test is isolated from the ordinary
      * save directory and other tests.
      */
     @BeforeEach void create() throws SQLException { database = new Database(directory.resolve("test.db")); }
 
     /*
-     * DEFENSE: completed
-     *
      * Create a two-second GameSession for the requested night, advance to morning and return its
      * completed immutable record.
      */
@@ -57,8 +53,6 @@ class DatabaseTest {
     }
 
     /*
-     * DEFENSE: createsProfileAndPersistsAcrossNewConnections
-     *
      * Verify fresh Progress, save Night 1, reopen Database and assert progress/result survive
      * connection recreation.
      */
@@ -74,8 +68,6 @@ class DatabaseTest {
     }
 
     /*
-     * DEFENSE: retriesAreIdempotentAndReplaysDoNotRelockNights
-     *
      * Save the same UUID twice, then later/earlier completed nights; require one first row and
      * monotonic unlocks with the correct final run count.
      */
@@ -92,8 +84,6 @@ class DatabaseTest {
     }
 
     /*
-     * DEFENSE: onlySuccessfulShiftsUnlockProgress
-     *
      * Save an abandoned attempt and assert total attempts increases while completed count and next
      * night do not.
      */
@@ -109,8 +99,6 @@ class DatabaseTest {
     }
 
     /*
-     * DEFENSE: separateProfilesAndQuotedNamesAreSafe
-     *
      * Save a name containing SQL-looking quoted text, assert the table still works, another player
      * stays empty and case-insensitive lookup finds the same profile.
      */
@@ -123,8 +111,6 @@ class DatabaseTest {
     }
 
     /*
-     * DEFENSE: failedInsertDoesNotAdvanceProgress
-     *
      * Try an invalid night zero completed record, require SQLException, then assert no
      * attempt/unlock update persisted. This exercises database constraint/rollback behavior.
      */
@@ -136,8 +122,6 @@ class DatabaseTest {
     }
 
     /*
-     * DEFENSE: fifthNightDoesNotUnlockANonexistentSixth
-     *
      * Save completed Night 5 directly through the storage API and assert nextNight remains five and
      * unlocked(6) is false. This test does not imply the UI allows skipping locked nights.
      */
@@ -149,8 +133,6 @@ class DatabaseTest {
     }
 
     /*
-     * DEFENSE: secretAttemptsRemainRecordedWithoutCompletingTheNight
-     *
      * Save failed and successful secret outcomes, retry the same successful UUID and reopen; assert
      * exactly two secret rows and no normal progress advancement.
      */
@@ -174,8 +156,6 @@ class DatabaseTest {
     }
 
     /*
-     * DEFENSE: legacyProfileWideSecretFlagIsPreservedWithoutGuessingANight
-     *
      * Create a legacy version-three completion table and flag, reopen/migrate, and verify the flag
      * row remains without inventing a night completion.
      */
@@ -197,8 +177,6 @@ class DatabaseTest {
     }
 
     /*
-     * DEFENSE: migratesVersionTwoRunsBeforeSavingASecretFailure
-     *
      * Rebuild a legacy outcome-constrained version-two table containing an old run; reopen through
      * Database, save a secret failure and require both old/new records.
      */
@@ -235,8 +213,6 @@ class DatabaseTest {
     }
 
     /*
-     * DEFENSE: migratesLegacyRunsAndPreservesProgressWhenRecordingCaughtOutcome
-     *
      * Construct version-one schema with three old outcomes, retain a normal completed result,
      * migrate and save CAUGHT. Verify history/completion count/unlock state across another reopen.
      */

@@ -9,27 +9,25 @@ import java.nio.file.Path;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
- * DEFENSE OVERVIEW: SettingsStoreTest
+ * SettingsStoreTest
  *
  * Purpose: JUnit checks for real UTF-8 preferences and normalization.
  *
- * Follow the flow: Create defaults, round-trip a name with ñ, load malformed values, and test
+ * Execution flow: Create defaults, round-trip a name with ñ, load malformed values, and test
  * line/control stripping plus bounds.
  *
- * Code-based rationale and tradeoff: A text-file round trip verifies actual bytes as well as
+ * Design rationale: A text-file round trip verifies actual bytes as well as
  * equality. Validation is tested without the form.
  *
- * State to recognize: Each file lives in a temporary test folder.
+ * State: Each file lives in a temporary test folder.
  *
- * Defense answer: The settings file is real editable text, and invalid values use defined
+ * Summary: The settings file is real editable text, and invalid values use defined
  * defaults/bounds.
  */
 class SettingsStoreTest {
     @TempDir Path directory;
 
     /*
-     * DEFENSE: firstLaunchWritesAnActualTextFile
-     *
      * Load a nonexistent settings.txt, expect DEFAULT and inspect the written text for volume=55.
      */
     @Test void firstLaunchWritesAnActualTextFile() throws Exception {
@@ -39,8 +37,6 @@ class SettingsStoreTest {
     }
 
     /*
-     * DEFENSE: settingsRoundTripAsUtf8
-     *
      * Save a preference with ñ and nondefault flags/volume; reload equal values and verify the
      * literal UTF-8 name is in the file.
      */
@@ -54,8 +50,6 @@ class SettingsStoreTest {
     }
 
     /*
-     * DEFENSE: invalidValuesUseSafeDefaultsAndBounds
-     *
      * Load malformed number/empty name/unrecognized boolean text, verify fallbacks, then load volume
      * 999 and require clamping to 100.
      */
@@ -68,8 +62,6 @@ class SettingsStoreTest {
     }
 
     /*
-     * DEFENSE: namesCannotInjectLinesIntoReports
-     *
      * Construct a name containing newline/carriage return and negative volume; assert control
      * removal, zero clamp and the 32-character name cap.
      */

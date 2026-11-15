@@ -12,35 +12,31 @@ import java.io.BufferedInputStream;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
- * DEFENSE OVERVIEW: AssetManagerTest
+ * AssetManagerTest
  *
  * Purpose: JUnit checks for bundled scenes, state fallbacks, active audio, static and font.
  *
- * Follow the flow: Construct AssetManager once; verify dimensions/distinct states; decode every
+ * Execution flow: Construct AssetManager once; verify dimensions/distinct states; decode every
  * Sound without a mixer; inspect PCM, duration and attribution.
  *
- * Code-based rationale and tradeoff: Asset decoding can be tested without speakers. These tests
+ * Design rationale: Asset decoding can be tested without speakers. These tests
  * prove packaging/decoding, not perceived volume on every machine.
  *
- * State to recognize: Uses before-all cached assets. Source WAV excerpts are checked for a
+ * State: Uses before-all cached assets. Source WAV excerpts are checked for a
  * nontrivial peak; garble/digital clips are two seconds.
  *
- * Defense answer: All active resources referenced by code should decode and required occupied images
+ * Summary: All active resources referenced by code should decode and required occupied images
  * should differ from clean ones.
  */
 class AssetManagerTest {
     private static AssetManager assets;
     /*
-     * DEFENSE: load
-     *
      * Construct one AssetManager before this suite so all tests inspect the same decoded resource
      * set.
      */
     @BeforeAll static void load() throws Exception { assets = new AssetManager(); }
 
     /*
-     * DEFENSE: allSevenBundledScenesLoadAtOriginalResolution
-     *
      * Loop through OFFICE and six cameras and assert each default image is 1916x821. This detects
      * missing or unexpectedly resized clean assets.
      */
@@ -52,8 +48,6 @@ class AssetManagerTest {
     }
 
     /*
-     * DEFENSE: futureUnmappedStatesFallbackToCleanRoom
-     *
      * Request an unmapped camera state and assert it is the exact same clean image object. This
      * proves the intended fallback contract.
      */
@@ -62,8 +56,6 @@ class AssetManagerTest {
     }
 
     /*
-     * DEFENSE: everyEnemyRenderIsBundledAndDistinctFromTheCleanRoom
-     *
      * Check all six occupied camera images and all directional/jumpscare office states are different
      * objects from clean. Also verify occupied camera aspect ratio and minimum width.
      */
@@ -81,8 +73,6 @@ class AssetManagerTest {
     }
 
     /*
-     * DEFENSE: everyActiveWavCanBeDecodedWithoutAudioHardware
-     *
      * Iterate every Sound, decode a resource or generate a secret cue, and assert nonempty audio
      * with a positive sample rate. No Clip/mixer is required, so this is not a speaker test.
      */
@@ -96,8 +86,6 @@ class AssetManagerTest {
     }
 
     /*
-     * DEFENSE: importantSourceCuesContainAudiblePcmAndInterferenceIsBoundedToTwoSeconds
-     *
      * Verify active source cues use expected mono 16-bit little-endian PCM, bounded durations and a
      * peak>=4000; assert garble/digital durations equal two seconds and scare fits its transition.
      */
@@ -128,8 +116,6 @@ class AssetManagerTest {
     }
 
     /*
-     * DEFENSE: secretAmbienceIsAnEightSecondSeamlessSynthesizedLoop
-     *
      * Generate secret ambience and check eight seconds of samples, zero-valued endpoints and at
      * least one audible sample. This checks the designed loop seam at sample endpoints.
      */
@@ -146,8 +132,6 @@ class AssetManagerTest {
     }
 
     /*
-     * DEFENSE: downloadedStaticIsAnimatedAndPixelFontIsBundled
-     *
      * Assert five distinct noise frames, expected GIF frame dimensions, VT323 font family and
      * preserved attribution text.
      */

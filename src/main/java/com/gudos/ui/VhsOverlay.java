@@ -6,33 +6,29 @@ import java.awt.*;
 
 /** Downloaded animated TV noise, with runtime scanlines and rolling tracking bands. */
 /*
- * DEFENSE OVERVIEW: VhsOverlay
+ * VhsOverlay
  *
  * Purpose: Draws animated noise, scanlines and a rolling band as a visual utility.
  *
- * Follow the flow: Menu/GamePanel and VhsRendererDecorator call paint.
+ * Execution flow: Menu/GamePanel and VhsRendererDecorator call paint.
  *
- * Code-based rationale and tradeoff: It returns immediately for reduced effects and restores
+ * Design rationale: It returns immediately for reduced effects and restores
  * composite/interpolation. The decorator uses a copied Graphics2D so color/paint changes do not leak
  * into later HUD drawing.
  *
- * State to recognize: Noise frames advance at about 16.6667 per second; room simulation is unchanged
+ * State: Noise frames advance at about 16.6667 per second; room simulation is unchanged
  * by this layer.
  *
- * Defense answer: VhsOverlay is a helper function; VhsRendererDecorator is the custom Decorator
+ * Summary: VhsOverlay is a helper function; VhsRendererDecorator is the custom Decorator
  * because it wraps the shared SceneRenderer interface.
  */
 public final class VhsOverlay {
     /*
-     * DEFENSE: VhsOverlay constructor
-     *
      * Private constructor prevents utility instances; paint is a stateless visual-layer operation.
      */
     private VhsOverlay() { }
 
     /*
-     * DEFENSE: paint
-     *
      * Return for reduced effects or nonpositive opacity. Preserve composite/interpolation, draw a
      * wrapped noise frame scaled nearest-neighbor, restore those settings, then add scanlines and a
      * moving tracking band. Caller-owned graphics isolation is still needed for color/paint changes.

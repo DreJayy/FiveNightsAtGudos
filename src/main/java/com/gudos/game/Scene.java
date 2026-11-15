@@ -2,21 +2,21 @@ package com.gudos.game;
 
 /** Room identifiers shared by gameplay, camera controls, and the scene-image manifest. */
 /*
- * DEFENSE OVERVIEW: Scene
+ * Scene
  *
  * Purpose: Defines the office and six canonical camera rooms.
  *
- * Follow the flow: Game controls validate a camera number with Scene.camera(number); logic and
+ * Execution flow: Game controls validate a camera number with Scene.camera(number); logic and
  * AssetManager share the enum id.
  *
- * Code-based rationale and tradeoff: Central identifiers keep camera labels, route locations and
+ * Design rationale: Central identifiers keep camera labels, route locations and
  * image manifest keys aligned. CAM 01 is currently Front entrance, despite some older dining
  * filenames/text.
  *
- * State to recognize: OFFICE has camera=0; camera rooms occupy enum positions 1-6. id values such as
+ * State: OFFICE has camera=0; camera rooms occupy enum positions 1-6. id values such as
  * cam04 match scenes.properties.
  *
- * Defense answer: Scene identifies a place; the separate state string identifies clean, occupied or
+ * Summary: Scene identifies a place; the separate state string identifies clean, occupied or
  * another render for that place.
  */
 public enum Scene {
@@ -33,8 +33,6 @@ public enum Scene {
     private final int camera;
 
     /*
-     * DEFENSE: Scene constructor
-     *
      * Store canonical manifest id, readable label and camera number for this enum entry. Logic, UI
      * and assets all share the same room identity.
      */
@@ -45,22 +43,16 @@ public enum Scene {
     }
 
     /*
-     * DEFENSE: id
-     *
      * Read the stable attempt UUID used for save deduplication. This accessor does not advance time,
      * save data or change the model; callers use it to draw or coordinate behavior.
      */
     public String id() { return id; }
     /*
-     * DEFENSE: label
-     *
      * Read the readable UI label. This accessor does not advance time, save data or change the
      * model; callers use it to draw or coordinate behavior.
      */
     public String label() { return label; }
     /*
-     * DEFENSE: camera
-     *
      * The instance accessor returns this scene camera number; the static overload validates an input
      * in 1..6 and uses its enum position. OFFICE is position zero, so values()[number] matches the
      * camera scenes. Reordering enum entries without updating this rule would break that mapping.
@@ -68,8 +60,6 @@ public enum Scene {
     public int camera() { return camera; }
 
     /*
-     * DEFENSE: camera
-     *
      * The instance accessor returns this scene camera number; the static overload validates an input
      * in 1..6 and uses its enum position. OFFICE is position zero, so values()[number] matches the
      * camera scenes. Reordering enum entries without updating this rule would break that mapping.

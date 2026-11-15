@@ -6,28 +6,26 @@ import java.awt.*;
 
 /** Static guide/credits screen; the credits flag chooses which content is drawn. */
 /*
- * DEFENSE OVERVIEW: InfoPanel
+ * InfoPanel
  *
  * Purpose: Draws the in-game guide or credits.
  *
- * Follow the flow: Application.page(GUIDE/CREDITS) constructs the same class with
+ * Execution flow: Application.page(GUIDE/CREDITS) constructs the same class with
  * credits=false/true.
  *
- * Code-based rationale and tradeoff: Static information can share one view and backdrop. Guide
+ * Design rationale: Static information can share one view and backdrop. Guide
  * controls are descriptive text; GamePanel/ScenePanel implement the actual actions.
  *
- * State to recognize: credits chooses renderCredits versus renderGuide. Current guide calls CAM 01
+ * State: credits chooses renderCredits versus renderGuide. Current guide calls CAM 01
  * front entrance.
  *
- * Defense answer: To find a rule, use the guide for the explanation and then show the corresponding
+ * Summary: To find a rule, use the guide for the explanation and then show the corresponding
  * GameSession/GamePanel method for proof.
  */
 public final class InfoPanel extends BackdropPanel {
     private final boolean credits;
 
     /*
-     * DEFENSE: InfoPanel constructor
-     *
      * Store whether this instance shows credits or the guide, retain assets through the backdrop and
      * install Back/Escape navigation.
      */
@@ -38,8 +36,6 @@ public final class InfoPanel extends BackdropPanel {
     }
 
     /*
-     * DEFENSE: render
-     *
      * Choose the static guide or static credits based on the constructor flag. Neither branch
      * changes gameplay or progress.
      */
@@ -49,8 +45,6 @@ public final class InfoPanel extends BackdropPanel {
     }
 
     /*
-     * DEFENSE: renderGuide
-     *
      * Draw control descriptions, three survival instructions and the no-checkpoint/focus-pause
      * explanation. The actual enforcement is in GamePanel and GameSession.
      */
@@ -88,8 +82,6 @@ public final class InfoPanel extends BackdropPanel {
     }
 
     /*
-     * DEFENSE: renderCredits
-     *
      * Draw technology and asset attribution text. Current code/manifest/Sound enum are the authority
      * if an older descriptive sentence differs from the implementation.
      */

@@ -5,25 +5,23 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
- * DEFENSE OVERVIEW: GameSessionTest
+ * GameSessionTest
  *
  * Purpose: JUnit checks for normal shift rules and stable ending records.
  *
- * Follow the flow: Drive the model directly through survival, power failure, pause, input exclusion,
+ * Execution flow: Drive the model directly through survival, power failure, pause, input exclusion,
  * abandon, custom scene states and invalid inputs.
  *
- * Code-based rationale and tradeoff: A custom short duration accelerates rule checks; full survival
+ * Design rationale: A custom short duration accelerates rule checks; full survival
  * still uses 360 simulated seconds.
  *
- * State to recognize: Test loops choose the correct approach pan/light when needed.
+ * State: Test loops choose the correct approach pan/light when needed.
  *
- * Defense answer: The same production model can be tested headlessly because it owns rules without
+ * Summary: The same production model can be tested headlessly because it owns rules without
  * owning Swing.
  */
 class GameSessionTest {
     /*
-     * DEFENSE: ordinaryShiftReachesMorningAndKeepsPower
-     *
      * Simulate a full 360-second Night 1 with correct approach/light reactions; assert COMPLETED, 6
      * AM, repelled encounters and plausible conserved power.
      */
@@ -44,8 +42,6 @@ class GameSessionTest {
     }
 
     /*
-     * DEFENSE: monitorCanExhaustThePowerBeforeMorning
-     *
      * Use a 1000-second test duration, keep monitor up except when defending, and assert eventual
      * POWER_OUT at zero power with equipment off.
      */
@@ -64,8 +60,6 @@ class GameSessionTest {
     }
 
     /*
-     * DEFENSE: pausingStopsBothClockAndDrain
-     *
      * Advance a session, pause and supply a huge delta; assert clock/power stay fixed and light is
      * released. Resume and verify timing/movement continue.
      */
@@ -87,8 +81,6 @@ class GameSessionTest {
     }
 
     /*
-     * DEFENSE: lightAndMonitorAreMutuallyExclusive
-     *
      * Turn on light, open monitor, try light while blocked, select a camera, then close monitor and
      * verify camera shortcuts are ignored. Assert usage reflects device state.
      */
@@ -109,8 +101,6 @@ class GameSessionTest {
     }
 
     /*
-     * DEFENSE: abandonedAndCompletedResultsAreStable
-     *
      * Abandon after eighteen seconds and repeatedly update/abandon/toggle; assert the same RunRecord
      * object and ABANDONED/00:18 remain.
      */
@@ -129,8 +119,6 @@ class GameSessionTest {
     }
 
     /*
-     * DEFENSE: stateHooksAreIndependentAndDefaultToCleanRenders
-     *
      * Set one custom camera state and verify unrelated scenes remain default. These hooks do not
      * move Gudo.
      */
@@ -143,8 +131,6 @@ class GameSessionTest {
     }
 
     /*
-     * DEFENSE: invalidInputsAreRejected
-     *
      * Assert invalid nights/durations/deltas/cameras and result-before-finish throw their defined
      * exceptions instead of creating silent inconsistent state.
      */

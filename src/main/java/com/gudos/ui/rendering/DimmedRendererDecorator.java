@@ -7,27 +7,25 @@ import java.awt.Graphics2D;
 
 /** Adds a black tint after rendering the wrapped component. */
 /*
- * DEFENSE OVERVIEW: DimmedRendererDecorator
+ * DimmedRendererDecorator
  *
  * Purpose: Adds a translucent black layer after its wrapped renderer draws.
  *
- * Follow the flow: GamePanel puts it around the normal camera chain for switching interference.
+ * Execution flow: GamePanel puts it around the normal camera chain for switching interference.
  *
- * Code-based rationale and tradeoff: Validate alpha=0-255, delegate first, and draw using a copied
+ * Design rationale: Validate alpha=0-255, delegate first, and draw using a copied
  * graphics context. Layer order changes pixels.
  *
- * State to recognize: shade holds black with configured alpha. It dims when called even with
+ * State: shade holds black with configured alpha. It dims when called even with
  * reducedEffects; GamePanel bypasses the switching chain in that mode.
  *
- * Defense answer: It is a decorator because it accepts and remains a SceneRenderer, delegates, then
+ * Summary: It is a decorator because it accepts and remains a SceneRenderer, delegates, then
  * adds darkness.
  */
 public final class DimmedRendererDecorator extends RendererDecorator {
     private final Color shade;
 
     /*
-     * DEFENSE: DimmedRendererDecorator constructor
-     *
      * Pass the wrapped component to the base, reject alpha outside0..255 and create the black tint.
      * The layer is applied only when render is called.
      */
@@ -38,8 +36,6 @@ public final class DimmedRendererDecorator extends RendererDecorator {
     }
 
     /*
-     * DEFENSE: render
-     *
      * Render the wrapped component first, then fill a copied Graphics2D with the configured
      * translucent black shade and dispose it in finally. It always dims if called; reduced switching
      * is bypassed by GamePanel.

@@ -22,28 +22,26 @@ import java.util.concurrent.FutureTask;
 
 /** Optional real-window/keyboard smoke check. Not part of the headless JUnit suite. */
 /*
- * DEFENSE OVERVIEW: DesktopSmoke
+ * DesktopSmoke
  *
  * Purpose: Optional executable end-to-end check using a real game window and java.awt.Robot.
  *
- * Follow the flow: main launches the real app with isolated saves, navigates
+ * Execution flow: main launches the real app with isolated saves, navigates
  * settings/gameplay/pause/fullscreen/abandon/records/quit, and captures only the game window.
  *
- * Code-based rationale and tradeoff: This is not an automatic JUnit test. It requires a display and
+ * Design rationale: This is not an automatic JUnit test. It requires a display and
  * can move the mouse/send keys; run only on a free desktop with a separate gudo.dataDir.
  *
- * State to recognize: frame and Robot are shared helpers; await/onEdt coordinate with Swing; output
+ * State: frame and Robot are shared helpers; await/onEdt coordinate with Swing; output
  * goes to target/desktop-preview.
  *
- * Defense answer: It checks actual window/input integration that headless rendering cannot prove.
+ * Summary: It checks actual window/input integration that headless rendering cannot prove.
  */
 public final class DesktopSmoke {
     private static JFrame frame;
     private static Robot robot;
 
     /*
-     * DEFENSE: main
-     *
      * Require an explicit isolated gudo.dataDir, launch Main, drive the real window with Robot,
      * verify text settings/SQLite/log/records and orderly exit, and save game-window captures. This
      * is a manual smoke executable, not a JUnit method.
@@ -128,16 +126,12 @@ public final class DesktopSmoke {
     }
 
     /*
-     * DEFENSE: key
-     *
      * Send one physical press and release using Robot. This exercises the real keyboard-routing
      * path.
      */
     private static void key(int code) { robot.keyPress(code); robot.keyRelease(code); }
 
     /*
-     * DEFENSE: click
-     *
      * Resolve a button by label on EDT, calculate its screen center, then use Robot to
      * move/press/release there.
      */
@@ -154,8 +148,6 @@ public final class DesktopSmoke {
     }
 
     /*
-     * DEFENSE: clickPrefix
-     *
      * Find a matching enabled button by one of the supplied label prefixes and click it through the
      * helper path.
      */
@@ -170,8 +162,6 @@ public final class DesktopSmoke {
     }
 
     /*
-     * DEFENSE: await
-     *
      * Poll the supplied condition on EDT until it succeeds or the fixed deadline expires. This
      * bounds waits for asynchronous UI/storage state.
      */
@@ -185,8 +175,6 @@ public final class DesktopSmoke {
     }
 
     /*
-     * DEFENSE: onEdt
-     *
      * Wrap Callable in FutureTask, invoke synchronously on the EDT, then return the value or
      * propagate failure. UI inspection stays on the correct thread.
      */
@@ -197,8 +185,6 @@ public final class DesktopSmoke {
     }
 
     /*
-     * DEFENSE: capture
-     *
      * Capture only the game window bounds into an image and write PNG under the supplied preview
      * directory. It is a diagnostic output, not a bundled room asset.
      */
@@ -216,8 +202,6 @@ public final class DesktopSmoke {
     }
 
     /*
-     * DEFENSE: showingDialog
-     *
      * Find a currently showing JDialog so the smoke check can answer its own leave confirmation.
      */
     private static JDialog showingDialog() {
@@ -226,8 +210,6 @@ public final class DesktopSmoke {
     }
 
     /*
-     * DEFENSE: button
-     *
      * Recursively search child containers for a JButton with the exact label. Return null if none
      * exists.
      */
@@ -241,8 +223,6 @@ public final class DesktopSmoke {
     }
 
     /*
-     * DEFENSE: buttonPrefix
-     *
      * Recursively find a JButton whose label begins with the requested prefix. Used when a dynamic
      * label has a stable beginning.
      */
@@ -255,8 +235,6 @@ public final class DesktopSmoke {
     }
 
     /*
-     * DEFENSE: find
-     *
      * Recursively find a component by Java class so the check can recognize the current
      * screen/control without reading private fields.
      */

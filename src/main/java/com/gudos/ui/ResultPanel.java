@@ -8,21 +8,21 @@ import java.awt.*;
 
 /** Displays the final RunRecord and reflects the asynchronous save's pending/success/failure status. */
 /*
- * DEFENSE OVERVIEW: ResultPanel
+ * ResultPanel
  *
  * Purpose: Displays an ended RunRecord and the pending/saved/failed storage status.
  *
- * Follow the flow: Application.finishShift builds it; savePendingRun drives saving/saved/failed;
+ * Execution flow: Application.finishShift builds it; savePendingRun drives saving/saved/failed;
  * buttons request next/replay/menu/retry.
  *
- * Code-based rationale and tradeoff: Disable next/menu while saving; allow retry with the same
+ * Design rationale: Disable next/menu while saving; allow retry with the same
  * pending UUID. A completed Night 1-4 offers next; other endings offer the same night; Night 5
  * remains capped.
  *
- * State to recognize: run is immutable; next/menu/retry are buttons; saveFailed and saveStatus
+ * State: run is immutable; next/menu/retry are buttons; saveFailed and saveStatus
  * control feedback.
  *
- * Defense answer: A displayed result and a fully saved result are different states. This panel makes
+ * Summary: A displayed result and a fully saved result are different states. This panel makes
  * the asynchronous storage status visible.
  */
 public final class ResultPanel extends BackdropPanel {
@@ -34,8 +34,6 @@ public final class ResultPanel extends BackdropPanel {
     private boolean saveFailed;
 
     /*
-     * DEFENSE: ResultPanel constructor
-     *
      * Retain the final RunRecord. Choose next night only for a normal completion, cap at five,
      * otherwise replay the same night. Create next/menu/retry callbacks; initially block navigation
      * and hide Retry until Application reports save status.
@@ -55,8 +53,6 @@ public final class ResultPanel extends BackdropPanel {
 
     // Block navigation to another shift until storage finishes, preserving this pending result.
     /*
-     * DEFENSE: saving
-     *
      * Mark the status pending, disable next/menu and hide Retry. A second attempt must not replace
      * the pending result before storage finishes.
      */
@@ -70,8 +66,6 @@ public final class ResultPanel extends BackdropPanel {
 
     // Application calls this after both the SQLite save and text report succeed.
     /*
-     * DEFENSE: saved
-     *
      * Mark both stores successful, enable next/menu and hide Retry. Application calls this only
      * after SQLite save and text append both return.
      */
@@ -85,8 +79,6 @@ public final class ResultPanel extends BackdropPanel {
 
     // Keep the result available for retry; returning to the menu requires an incomplete-save confirmation.
     /*
-     * DEFENSE: failed
-     *
      * Keep next disabled, allow menu with a coordinator warning and show Retry Save. The same
      * immutable RunRecord remains available, so ordinary retries do not add duplicate rows.
      */
@@ -99,8 +91,6 @@ public final class ResultPanel extends BackdropPanel {
     }
 
     /*
-     * DEFENSE: render
-     *
      * Draw the outcome-specific title/instruction, actual active duration, rounded remaining power
      * and save status. Only Outcome.COMPLETED receives normal victory treatment.
      */

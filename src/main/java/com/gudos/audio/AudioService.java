@@ -17,23 +17,23 @@ import java.util.concurrent.Executors;
 
 /** Audio decoding and mixer calls never block Swing. Missing hardware degrades to silence. */
 /*
- * DEFENSE OVERVIEW: AudioService
+ * AudioService
  *
  * Purpose: Provides the audio facade over Java Sound and a serial audio worker.
  *
- * Follow the flow: Application or a panel callback requests play, ambience, menuMusic or gameplay.
+ * Execution flow: Application or a panel callback requests play, ambience, menuMusic or gameplay.
  * The worker lazily decodes/caches a Clip, sets gain/pan, starts or loops it, and later stops/closes
  * it.
  *
- * Code-based rationale and tradeoff: One facade hides stream decoding, mixer access, caching, thread
+ * Design rationale: One facade hides stream decoding, mixer access, caching, thread
  * scheduling, layers and cleanup. Missing hardware is remembered as unavailable and gameplay
  * continues. The worker is daemon; the storage worker is not.
  *
- * State to recognize: clips caches by Sound; unavailable remembers failed cues; volatile volume is
+ * State: clips caches by Sound; unavailable remembers failed cues; volatile volume is
  * shared with the worker; requestedLoops records desired scene layers. Runtime audio requests are
  * expected from the coordinator/UI thread.
  *
- * Defense answer: The client asks for a sound rather than manually creating AudioInputStream, Clip,
+ * Summary: The client asks for a sound rather than manually creating AudioInputStream, Clip,
  * FloatControl and loop logic. That is the facade boundary.
  */
 public final class AudioService implements AutoCloseable {
@@ -51,8 +51,6 @@ public final class AudioService implements AutoCloseable {
     private Set<Sound> requestedLoops = Set.of();
 
     /*
-     * DEFENSE: AudioService constructor
-     *
      * Clamp the initial master volume into 0..100. Clip decoding stays lazy, so constructing this
      * facade does not eagerly open every WAV or require a functioning mixer.
      */
@@ -60,8 +58,6 @@ public final class AudioService implements AutoCloseable {
 
     // Find an already-open clip, or decode its bundled resource the first time it is requested.
     /*
-     * DEFENSE: clip
-     *
      * Return a cached Clip or lazily decode a bundled WAV/Chiptune stream and open one. Cache
      * success; remember failure in unavailable and return null so missing audio hardware does not
      * stop gameplay. BufferedInputStream is a Java-library decorator; the custom renderer decorators
@@ -90,8 +86,6 @@ public final class AudioService implements AutoCloseable {
 
     // Combine master volume with this sound's gain; Java Sound's gain control expects decibels.
     /*
-     * DEFENSE: applyGain
-     *
      * Combine volume/100 with the cue gain, convert positive linear gain using 20*log10, and clamp
      * to the mixer control range. If MUTE exists set it for zero volume. Unsupported hardware
      * controls are skipped.
@@ -110,8 +104,6 @@ public final class AudioService implements AutoCloseable {
 
     // Update all cached clips on the same worker that performs playback operations.
     /*
-     * DEFENSE: setVolume
-     *
      * Clamp/store the new master value, then enqueue gain updates for every cached clip on the audio
      * worker. The volatile field makes the latest value visible across threads.
      */
@@ -122,8 +114,6 @@ public final class AudioService implements AutoCloseable {
 
     // Play a one-shot cue from its beginning; repeated requests restart that sound's cached clip.
     /*
-     * DEFENSE: play
-     *
      * The one-argument overload forwards with centered pan. The worker-based overload skips muted
      * requests, stops stale approach cues on retreat, obtains the cached clip, restarts it from
      * frame zero, applies gain/pan and starts it. This is a facade call over several Java Sound
@@ -135,8 +125,6 @@ public final class AudioService implements AutoCloseable {
 
     /** Position encounter cues toward the approach; UI feedback stays centered. */
     /*
-     * DEFENSE: play
-     *
      * The one-argument overload forwards with centered pan. The worker-based overload skips muted
      * requests, stops stale approach cues on retreat, obtains the cached clip, restarts it from
      * frame zero, applies gain/pan and starts it. This is a facade call over several Java Sound
@@ -165,8 +153,6 @@ public final class AudioService implements AutoCloseable {
 
     /** Stop every scene layer and one-shot, including the minigame's synthesized ambience. */
     /*
-     * DEFENSE: stopAll
-     *
      * Clear the requested loop set and queue stopping every cached clip, including secret ambience
      * and transient cues. It keeps the decoded clips available for later reuse.
      */
@@ -176,8 +162,6 @@ public final class AudioService implements AutoCloseable {
     }
 
     /*
-     * DEFENSE: applyPan
-     *
      * Prefer PAN and fall back to BALANCE if supported; clamp the requested -1..1-style position to
      * the actual control bounds. Unsupported positional audio simply remains centered.
      */
@@ -192,8 +176,6 @@ public final class AudioService implements AutoCloseable {
 
     /** Replace only changed loops, preserving playback positions of shared layers. */
     /*
-     * DEFENSE: ambience
-     *
      * Build the requested set of loops; return if unchanged. Stop only removed loops and start only
      * added ones on the worker, preserving the playback position of shared layers. Passing null with
      * no extra layers means no ambience loops.
@@ -226,8 +208,6 @@ public final class AudioService implements AutoCloseable {
 
     /** Stop transient sounds on pause, scene exit and before the result sting. */
     /*
-     * DEFENSE: stopEffects
-     *
      * Capture the current desired loops, then stop cached sounds outside that set. This removes
      * transient cues without restarting or stopping ambience shared by the current scene.
      */
@@ -239,8 +219,6 @@ public final class AudioService implements AutoCloseable {
     }
 
     /*
-     * DEFENSE: menuMusic
-     *
      * Request menu darkness music plus static through ambience. The client does not manage two Clips
      * or looping details.
      */
@@ -248,8 +226,6 @@ public final class AudioService implements AutoCloseable {
 
     /** Breathing is local to an office arrival; hiss belongs only to the raised monitor. */
     /*
-     * DEFENSE: gameplay
-     *
      * Build the desired room layers from monitor/office/tension/garble state, then pass them to
      * ambience. Camera garble brings both its variant and digital layer; office breathing is panned
      * toward the approach. Shared loops are not restarted every frame.
@@ -273,8 +249,6 @@ public final class AudioService implements AutoCloseable {
 
     // Queue clip cleanup after existing audio tasks, then stop accepting new tasks.
     /*
-     * DEFENSE: close
-     *
      * Queue closing every cached Clip after already queued work, then shut down the executor. Audio
      * resource cleanup is still owned by the same worker.
      */

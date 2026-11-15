@@ -8,20 +8,20 @@ import java.util.Objects;
 
 /** Adds animated VHS interference without changing the wrapped renderer. */
 /*
- * DEFENSE OVERVIEW: VhsRendererDecorator
+ * VhsRendererDecorator
  *
  * Purpose: Adds optional VHS interference after its wrapped renderer draws.
  *
- * Follow the flow: Normal camera uses opacity 0.25; switching adds an outer opacity 0.85 layer at
+ * Execution flow: Normal camera uses opacity 0.25; switching adds an outer opacity 0.85 layer at
  * speed 3.
  *
- * Code-based rationale and tradeoff: Delegate with original time so effect speed affects only this
+ * Design rationale: Delegate with original time so effect speed affects only this
  * wrapper. Skip noise when reducedEffects or opacity=0, but still render the wrapped room.
  *
- * State to recognize: assets/opacity/speed are validated configuration; copied effect Graphics2D is
+ * State: assets/opacity/speed are validated configuration; copied effect Graphics2D is
  * disposed in finally.
  *
- * Defense answer: The wrapper changes rendering by adding a layer, without modifying
+ * Summary: The wrapper changes rendering by adding a layer, without modifying
  * CameraSceneRenderer. Another decorator can wrap it.
  */
 public final class VhsRendererDecorator extends RendererDecorator {
@@ -30,8 +30,6 @@ public final class VhsRendererDecorator extends RendererDecorator {
     private final double speed;
 
     /*
-     * DEFENSE: VhsRendererDecorator constructor
-     *
      * The three-argument overload delegates with speed1. The full overload retains a nonnull asset
      * manager, validates finite opacity0..1 and positive finite speed, and retains the wrapped
      * renderer through super.
@@ -41,8 +39,6 @@ public final class VhsRendererDecorator extends RendererDecorator {
     }
 
     /*
-     * DEFENSE: VhsRendererDecorator constructor
-     *
      * The three-argument overload delegates with speed1. The full overload retains a nonnull asset
      * manager, validates finite opacity0..1 and positive finite speed, and retains the wrapped
      * renderer through super.
@@ -57,8 +53,6 @@ public final class VhsRendererDecorator extends RendererDecorator {
     }
 
     /*
-     * DEFENSE: render
-     *
      * Render the wrapped component with original time first. If effects are allowed and opacity>0,
      * draw VHS on a copied context using time*speed for this wrapper only. Dispose the copy so its
      * graphics state cannot leak into the HUD.

@@ -6,24 +6,22 @@ import java.awt.*;
 
 /** Links the Extras menu's labels to the corresponding Navigation.Page requests. */
 /*
- * DEFENSE OVERVIEW: ExtrasPanel
+ * ExtrasPanel
  *
  * Purpose: Routes five text entries to secondary pages.
  *
- * Follow the flow: Select Night, How to Play, Shift Records, Settings and Credits map in order to
+ * Execution flow: Select Night, How to Play, Shift Records, Settings and Credits map in order to
  * Navigation.Page values.
  *
- * Code-based rationale and tradeoff: Keep a small routing screen without placing database or
+ * Design rationale: Keep a small routing screen without placing database or
  * gameplay logic here. Capturing index per loop keeps each callback attached to the correct page.
  *
- * State to recognize: Labels and Page arrays must stay in the same order.
+ * State: Labels and Page arrays must stay in the same order.
  *
- * Defense answer: Extras is an entry menu; Application.page chooses and loads the actual panel.
+ * Summary: Extras is an entry menu; Application.page chooses and loads the actual panel.
  */
 public final class ExtrasPanel extends BackdropPanel {
     /*
-     * DEFENSE: ExtrasPanel constructor
-     *
      * Install shared Back and build the five label/Page pairs. Capture each iteration index for its
      * callback so buttons navigate to the intended page.
      */
@@ -41,8 +39,6 @@ public final class ExtrasPanel extends BackdropPanel {
     }
 
     /*
-     * DEFENSE: render
-     *
      * Draw the shared Extras page chrome. The five real navigation buttons were constructed earlier
      * and Swing paints them as children.
      */

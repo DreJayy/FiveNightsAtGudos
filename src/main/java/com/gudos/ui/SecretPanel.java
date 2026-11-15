@@ -13,22 +13,22 @@ import java.util.function.Consumer;
  * the model; Application owns the window, audio service, shift records and navigation.
  */
 /*
- * DEFENSE OVERVIEW: SecretPanel
+ * SecretPanel
  *
  * Purpose: Controls and renders the scrolling pixel-art minigame.
  *
- * Follow the flow: GamePanel paper trigger -> Application.openSecret -> SecretPanel; key events call
+ * Execution flow: GamePanel paper trigger -> Application.openSecret -> SecretPanel; key events call
  * SecretGame; tick advances it; outcome freezes, silences and reports after three seconds.
  *
- * Code-based rationale and tradeoff: Use an offscreen 640x360 image enlarged nearest-neighbor. World
+ * Design rationale: Use an offscreen 640x360 image enlarged nearest-neighbor. World
  * scrolling is isolated from fixed HUD. reported and outcomeSilenced prevent duplicate
  * callbacks/audio.
  *
- * State to recognize: left/right/jump/action are input flags; paused stops model and transition
+ * State: left/right/jump/action are input flags; paused stops model and transition
  * time; pixels is the retro canvas; transitionTime reaches 3.0 before reporting; animation/walk
  * drive visuals.
  *
- * Defense answer: This panel pauses its own model by skipping update. The original night session is
+ * Summary: This panel pauses its own model by skipping update. The original night session is
  * separately paused by Application. Both success and failure save a secret outcome, then restart the
  * same normal night.
  */
@@ -46,8 +46,6 @@ public final class SecretPanel extends ScenePanel {
     private static final double TRANSITION_SECONDS = 3.0;
 
     /*
-     * DEFENSE: SecretPanel constructor
-     *
      * Retain model/outcome/audio/reduced-effect callbacks and bind A/D/arrows, Space, E and Escape.
      * Debounce jump/action so held keys do not auto-repeat accepted actions. View construction does
      * not start the pickup timer.
@@ -80,23 +78,17 @@ public final class SecretPanel extends ScenePanel {
 
     // Also called on window focus loss; clearing held keys prevents movement after focus returns.
     /*
-     * DEFENSE: pause
-     *
      * Set paused and clear all held input flags. Application calls this on focus loss; Escape can
      * later unpause this panel.
      */
     public void pause() { paused = true; release(); }
     /*
-     * DEFENSE: release
-     *
      * Clear movement/jump/action flags so old physical input cannot continue after a pause or focus
      * change.
      */
     private void release() { left = right = jump = action = false; }
 
     /*
-     * DEFENSE: silenceOnOutcome
-     *
      * When the model first leaves PLAYING, set outcomeSilenced and run the audio-stop callback
      * immediately. Delivery can end inside an E callback; capture/timeout can end during tick.
      */
@@ -109,8 +101,6 @@ public final class SecretPanel extends ScenePanel {
     }
 
     /*
-     * DEFENSE: tick
-     *
      * Skip model updates while paused or ended. During play update movement and visual walk
      * direction; on ending silence once, count three unpaused transition seconds, set reported and
      * send the won boolean once. Application handles persistence/restarting.
@@ -135,8 +125,6 @@ public final class SecretPanel extends ScenePanel {
     }
 
     /*
-     * DEFENSE: render
-     *
      * Draw into the 640x360 pixel buffer with logical scaling, translate only a copied world context
      * to follow the player across the 2560-wide level, draw fixed HUD/signal lines, then enlarge
      * nearest-neighbor to the screen. This is 2D world scrolling.
@@ -164,8 +152,6 @@ public final class SecretPanel extends ScenePanel {
 
     /** Fixed white tracking lines over the frozen scene; the positions never change per frame. */
     /*
-     * DEFENSE: drawSignalLines
-     *
      * Draw fixed horizontal white bands over the frozen final minigame scene. Their positions do not
      * animate; reducedEffects lowers opacity. This is distinct from normal animated VHS noise.
      */
@@ -176,8 +162,6 @@ public final class SecretPanel extends ScenePanel {
     }
 
     /*
-     * DEFENSE: drawRoom
-     *
      * Draw background tiles, floor, stockroom doorway and platform tops in world coordinates. The
      * destination/platform shapes come from the model level configuration.
      */
@@ -215,8 +199,6 @@ public final class SecretPanel extends ScenePanel {
 
     /** Background-only landmarks inspired by the dining room, serving counter and kitchen feeds. */
     /*
-     * DEFENSE: drawCarinderiaDetails
-     *
      * Draw visual-only dining/counter/kitchen landmarks across the side-view level. These shapes do
      * not create physics obstacles; only level platforms/cover/destination have the corresponding
      * model rules.
@@ -276,8 +258,6 @@ public final class SecretPanel extends ScenePanel {
     }
 
     /*
-     * DEFENSE: drawWorld
-     *
      * Draw model beam polygons, Gudo, the carried/dropped bundle, cover shelves and witnesses in
      * that depth order. The view uses the same model polygons as collision; foreground cover visibly
      * explains why a bundle can be hidden.
@@ -325,8 +305,6 @@ public final class SecretPanel extends ScenePanel {
     }
 
     /*
-     * DEFENSE: person
-     *
      * Draw one pixel-art figure using a local transformed graphics copy. Mirror for left-facing
      * direction, alternate limbs for walking and use an airborne pose for jumps. These are drawn
      * shapes, not an external sprite-sheet animation.
@@ -368,8 +346,6 @@ public final class SecretPanel extends ScenePanel {
     }
 
     /*
-     * DEFENSE: bundle
-     *
      * Draw the shrouded bundle around the existing model anchor. The larger visual silhouette does
      * not change center-based cover/detection or pickup rules.
      */
@@ -397,8 +373,6 @@ public final class SecretPanel extends ScenePanel {
     }
 
     /*
-     * DEFENSE: drawHud
-     *
      * Draw instructions and countdown (TIME -- before first pickup), optional retro noise and the
      * paused overlay. Only the model decrements remaining; the view ceil is display rounding.
      */

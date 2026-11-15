@@ -10,24 +10,24 @@ import java.awt.image.DataBufferInt;
  * Only the room is projected: HUD/text never pass through this transformation.
  */
 /*
- * DEFENSE OVERVIEW: PanoramaRenderer
+ * PanoramaRenderer
  *
  * Purpose: Projects a wide room image into a curved-looking view and maps clicks back to source
  * pixels.
  *
- * Follow the flow: render clamps/quantizes pan, prepares sampling maps when the source changes,
+ * Execution flow: render clamps/quantizes pan, prepares sampling maps when the source changes,
  * fills a reused 854x480 image, and returns it. sourcePoint reverses the latest sampling for a hit
  * test.
  *
- * Code-based rationale and tradeoff: atan maps horizontal rays and cos changes vertical sampling
+ * Design rationale: atan maps horizontal rays and cos changes vertical sampling
  * near the edges. Cached pixel maps and one output buffer reduce allocation. A separate renderer is
  * needed when two outputs must coexist for a blend.
  *
- * State to recognize: output/pixels are reused; sourceRows and sourceColumns locate input samples;
+ * State: output/pixels are reused; sourceRows and sourceColumns locate input samples;
  * lastSource/lastYaw skip unchanged work. HALF_FOV is 40 degrees, so the horizontal field is 80
  * degrees.
  *
- * Defense answer: This is a Java2D image projection, not a 3D world or a plain sliding crop. Only
+ * Summary: This is a Java2D image projection, not a 3D world or a plain sliding crop. Only
  * the room is transformed; HUD text stays flat.
  */
 public final class PanoramaRenderer {
@@ -50,8 +50,6 @@ public final class PanoramaRenderer {
      * lives in the source image, so this reverse lookup keeps clicks aligned during camera sweeps.
      */
     /*
-     * DEFENSE: sourcePoint
-     *
      * For a valid projected coordinate after render, return the source image column and row used for
      * that output pixel. Return null if there is no prepared source or the point is outside 854x480.
      * This keeps the CAM 04 paper hitbox attached to the moving image.
@@ -62,8 +60,6 @@ public final class PanoramaRenderer {
     }
 
     /*
-     * DEFENSE: render
-     *
      * Reject null/nonfinite inputs; clamp pan and quantize to 0..2048. Reuse output when source/yaw
      * are unchanged; prepare new lookup data when source identity changes. Compute columns for
      * current yaw, sample the source into the shared output pixel array, remember yaw and return the
@@ -88,8 +84,6 @@ public final class PanoramaRenderer {
     // Precompute the curved projection whenever the source image changes.
     // Horizontal rays use atan; cos changes the vertical span toward the sides of the view.
     /*
-     * DEFENSE: prepare
-     *
      * Cache source pixels and construct curved sampling lookups for this source image. atan converts
      * screen column to ray angle; cos varies vertical span. Clamp every sample into the source
      * bounds. This work is reused until the source image changes.

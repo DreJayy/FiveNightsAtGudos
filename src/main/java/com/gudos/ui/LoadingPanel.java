@@ -4,35 +4,31 @@ import java.awt.*;
 
 /** Animated waiting screen; the calling worker performs loading and decides when to leave it. */
 /*
- * DEFENSE OVERVIEW: LoadingPanel
+ * LoadingPanel
  *
  * Purpose: Draws a waiting message and animated dots.
  *
- * Follow the flow: Main uses it during boot; Application uses it for asynchronous records/progress
+ * Execution flow: Main uses it during boot; Application uses it for asynchronous records/progress
  * reads.
  *
- * Code-based rationale and tradeoff: The panel does not perform slow work. The worker and
+ * Design rationale: The panel does not perform slow work. The worker and
  * coordinator decide when loading is complete.
  *
- * State to recognize: message is supplied by the caller; age chooses one to three dots.
+ * State: message is supplied by the caller; age chooses one to three dots.
  *
- * Defense answer: Animated loading is evidence that the EDT can repaint while another thread does
+ * Summary: Animated loading is evidence that the EDT can repaint while another thread does
  * IO.
  */
 public final class LoadingPanel extends ScenePanel {
     private final String message;
 
     /*
-     * DEFENSE: LoadingPanel constructor
-     *
      * Retain the human loading message. Rendering animates dots while another component owns actual
      * work.
      */
     public LoadingPanel(String message) { this.message = message; }
 
     /*
-     * DEFENSE: render
-     *
      * Fill black, animate one-to-three dots from panel age and center the supplied message. It never
      * starts IO; the caller owns the background task.
      */

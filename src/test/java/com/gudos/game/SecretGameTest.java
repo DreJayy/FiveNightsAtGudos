@@ -8,25 +8,23 @@ import java.awt.Rectangle;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
- * DEFENSE OVERVIEW: SecretGameTest
+ * SecretGameTest
  *
  * Purpose: JUnit checks for pickup timer, delivery, hiding, patrol beams and wider-world movement.
  *
- * Follow the flow: Build small test levels; simulate before/after pickup; carry/drop/hide/deliver;
+ * Execution flow: Build small test levels; simulate before/after pickup; carry/drop/hide/deliver;
  * make each patrol independently dangerous.
  *
- * Code-based rationale and tradeoff: Small controlled configurations isolate one rule per test. They
+ * Design rationale: Small controlled configurations isolate one rule per test. They
  * do not replace the production level playability test.
  *
- * State to recognize: level helper supplies safe or dangerous patrol bounds for each scenario.
+ * State: level helper supplies safe or dangerous patrol bounds for each scenario.
  *
- * Defense answer: Only the bundle center is detected, and dropping/hiding does not reset or pause
+ * Summary: Only the bundle center is detected, and dropping/hiding does not reset or pause
  * its sixty-second countdown.
  */
 class SecretGameTest {
     /*
-     * DEFENSE: level
-     *
      * Build a small reproducible level with bundle/player at x100 and caller-chosen patrol endpoints
      * so individual rule tests can be isolated.
      */
@@ -37,8 +35,6 @@ class SecretGameTest {
     }
 
     /*
-     * DEFENSE: countdownStartsOnlyAtPickupAndContinuesAfterDropping
-     *
      * Explore ten seconds without pickup and verify sixty seconds remain; pick up/drop and verify
      * countdown continues, then reaches LOST on timeout.
      */
@@ -58,8 +54,6 @@ class SecretGameTest {
     }
 
     /*
-     * DEFENSE: deliveryRequiresCarryingAndWins
-     *
      * Pick up, walk into the test destination, press the action again and assert WON. Delivery has
      * priority over dropping.
      */
@@ -72,8 +66,6 @@ class SecretGameTest {
     }
 
     /*
-     * DEFENSE: witnessSeesCarriedOrDroppedBundleUnlessItIsBehindCover
-     *
      * Use a nearby dangerous patrol to lose with exposed bundle, then add cover and show a dropped
      * hidden bundle remains PLAYING.
      */
@@ -94,8 +86,6 @@ class SecretGameTest {
     }
 
     /*
-     * DEFENSE: witnessBeamIsShortAndPointsInPatrolDirection
-     *
      * Test triangle points before and after the patrol turns at its right endpoint; confirm range
      * and direction match visible beam geometry.
      */
@@ -111,8 +101,6 @@ class SecretGameTest {
     }
 
     /*
-     * DEFENSE: hidingWorksWhileCarryingOrAfterDroppingAndTimerContinues
-     *
      * Place the bundle behind cover, verify safety while carried and dropped, then move away and
      * assert both hidden state and countdown decrease persist.
      */
@@ -133,8 +121,6 @@ class SecretGameTest {
     }
 
     /*
-     * DEFENSE: eachPatrolCanDetectTheBundleAndCoverProtectsAgainstAll
-     *
      * Make each of three patrol slots dangerous in turn and require LOST; then overlap all three
      * near a covered bundle and require PLAYING.
      */
@@ -158,8 +144,6 @@ class SecretGameTest {
     }
 
     /*
-     * DEFENSE: extendedLevelAllowsWalkingBeyondTheOriginalScreen
-     *
      * Build width 2560 and walk before pickup for 7.2 seconds; assert player x passes 1400 without
      * starting countdown/detection.
      */

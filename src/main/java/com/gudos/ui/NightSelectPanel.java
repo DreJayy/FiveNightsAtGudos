@@ -7,27 +7,25 @@ import java.awt.*;
 
 /** Displays five nights; buttons are enabled from the current profile's saved progress. */
 /*
- * DEFENSE OVERVIEW: NightSelectPanel
+ * NightSelectPanel
  *
  * Purpose: Shows five night buttons gated by the loaded progress.
  *
- * Follow the flow: Extras -> Select Night -> enabled Night N -> navigation.startNight(N).
+ * Execution flow: Extras -> Select Night -> enabled Night N -> navigation.startNight(N).
  *
- * Code-based rationale and tradeoff: UI disables locked nights; Application rechecks unlocked before
+ * Design rationale: UI disables locked nights; Application rechecks unlocked before
  * starting. Capture the loop value in selected so each listener keeps its own night.
  *
- * State to recognize: progress supplies nextNight/highestCompleted; the page renders Cleared, Locked
+ * State: progress supplies nextNight/highestCompleted; the page renders Cleared, Locked
  * or no status.
  *
- * Defense answer: Disabling a button is user feedback. The coordinator guard is the second boundary
+ * Summary: Disabling a button is user feedback. The coordinator guard is the second boundary
  * that rejects a locked start request.
  */
 public final class NightSelectPanel extends BackdropPanel {
     private final Progress progress;
 
     /*
-     * DEFENSE: NightSelectPanel constructor
-     *
      * Create five night buttons with captured numeric callbacks to Navigation.startNight. Set each
      * enabled state from Progress.unlocked; Application rechecks eligibility.
      */
@@ -46,8 +44,6 @@ public final class NightSelectPanel extends BackdropPanel {
     }
 
     /*
-     * DEFENSE: render
-     *
      * Show the saved selection page; label nights Cleared or Locked using loaded progress and draw
      * the increasing-difficulty hint. Button callbacks were created with a captured night value.
      */

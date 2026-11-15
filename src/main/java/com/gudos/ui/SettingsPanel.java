@@ -18,22 +18,22 @@ import java.awt.datatransfer.StringSelection;
 
 /** Edits a copy of the current preferences; Application owns saving and applying the submitted values. */
 /*
- * DEFENSE OVERVIEW: SettingsPanel
+ * SettingsPanel
  *
  * Purpose: Edits preferences in real Swing controls and submits an immutable Settings value.
  *
- * Follow the flow: Extras -> Settings -> edit name/volume/effects/fullscreen -> Apply ->
+ * Execution flow: Extras -> Settings -> edit name/volume/effects/fullscreen -> Apply ->
  * navigation.saveSettings(values()).
  *
- * Code-based rationale and tradeoff: DocumentFilter sanitizes typed/pasted names, and Settings
+ * Design rationale: DocumentFilter sanitizes typed/pasted names, and Settings
  * validates again. Applying is explicit; Back does not save edits. The clipboard button copies the
  * resolved data folder.
  *
- * State to recognize: JTextField name, JSlider volume, JCheckBox reducedEffects/fullscreen,
+ * State: JTextField name, JSlider volume, JCheckBox reducedEffects/fullscreen,
  * GameButton apply, AppPaths paths and status. Nested CheckIcon customizes appearance while
  * JCheckBox retains behavior.
  *
- * Defense answer: The view gathers values; Application performs IO and switches profiles only after
+ * Summary: The view gathers values; Application performs IO and switches profiles only after
  * the save path succeeds.
  */
 public final class SettingsPanel extends BackdropPanel {
@@ -46,8 +46,6 @@ public final class SettingsPanel extends BackdropPanel {
     private String status = "Preferences are written to settings.txt when you apply.";
 
     /*
-     * DEFENSE: SettingsPanel constructor
-     *
      * Build real name/volume/effects/fullscreen controls from current Settings. Install a sanitizing
      * DocumentFilter, custom slider/checkbox art, Apply -> navigation.saveSettings(values()), and
      * Copy Data Folder. Editing does not save until Apply.
@@ -67,8 +65,6 @@ public final class SettingsPanel extends BackdropPanel {
         // Filter pasted/typed names before display: remove control characters and cap at 32 characters.
         ((AbstractDocument) name.getDocument()).setDocumentFilter(new DocumentFilter() {
             /*
-             * DEFENSE: insertString
-             *
              * Route inserted text through the same replace filter so typing and paste share
              * sanitization and the name-length cap.
              */
@@ -76,8 +72,6 @@ public final class SettingsPanel extends BackdropPanel {
                 replace(bypass, offset, 0, text, attributes);
             }
             /*
-             * DEFENSE: replace
-             *
              * Remove control characters, compute capacity after replacing the selected span,
              * truncate inserted text to the remaining 32-character allowance and call the bypass.
              * Settings validates again at submission/load.
@@ -94,8 +88,6 @@ public final class SettingsPanel extends BackdropPanel {
         volume.setForeground(Theme.AMBER);
         volume.setUI(new BasicSliderUI(volume) {
             /*
-             * DEFENSE: paintTrack
-             *
              * Draw the slider base track and filled section up to the current value using a copied
              * Graphics2D. This replaces appearance, not the JSlider value model.
              */
@@ -108,8 +100,6 @@ public final class SettingsPanel extends BackdropPanel {
                 g.dispose();
             }
             /*
-             * DEFENSE: paintThumb
-             *
              * Draw the custom slider handle with focus-aware color, then dispose the graphics copy.
              */
             @Override public void paintThumb(Graphics graphics) {
@@ -120,8 +110,6 @@ public final class SettingsPanel extends BackdropPanel {
                 g.dispose();
             }
             /*
-             * DEFENSE: paintFocus
-             *
              * Intentionally draw no default focus ring for this slider UI. The custom thumb color
              * still reflects focus.
              */
@@ -143,8 +131,6 @@ public final class SettingsPanel extends BackdropPanel {
     }
 
     /*
-     * DEFENSE: checkbox
-     *
      * Create a real JCheckBox with transparent background, the shared font and custom
      * checked/unchecked icons. Swing still manages selection and input.
      */
@@ -163,27 +149,21 @@ public final class SettingsPanel extends BackdropPanel {
 
     // Custom checkbox artwork; the JCheckBox still handles selection and input normally.
     /*
-     * DEFENSE TYPE: CheckIcon
+     * CheckIcon
      *
      * A value carrying checked state while implementing Swing Icon drawing; JCheckBox owns
      * interaction.
      */
     private record CheckIcon(boolean checked) implements Icon {
         /*
-         * DEFENSE: getIconWidth
-         *
          * Report the custom checkbox icon width of 22 logical pixels to Swing layout.
          */
         @Override public int getIconWidth() { return 22; }
         /*
-         * DEFENSE: getIconHeight
-         *
          * Report the custom checkbox icon height of 22 logical pixels to Swing layout.
          */
         @Override public int getIconHeight() { return 22; }
         /*
-         * DEFENSE: paintIcon
-         *
          * Draw the custom checkbox square/focus color and checkmark from the record checked flag.
          * Copy/dispose graphics so the icon does not alter later painting.
          */
@@ -206,16 +186,12 @@ public final class SettingsPanel extends BackdropPanel {
 
     // Read the form as one value object; Settings validates/clamps the values again.
     /*
-     * DEFENSE: values
-     *
      * Read all four form controls and construct a new validated Settings value. Reading the form
      * alone does not persist it.
      */
     public Settings values() { return new Settings(name.getText(), volume.getValue(), reducedEffects.isSelected(), fullscreen.isSelected()); }
 
     /*
-     * DEFENSE: setFullscreen
-     *
      * Update the checkbox after Application successfully persists/applies an F11 change while this
      * form is visible.
      */
@@ -223,8 +199,6 @@ public final class SettingsPanel extends BackdropPanel {
 
     // Prevent another Apply request while the storage worker is still processing this one.
     /*
-     * DEFENSE: setSaving
-     *
      * Disable Apply while an async save is active and update status text. Application owns the busy
      * guard as well as this visual feedback.
      */
@@ -234,8 +208,6 @@ public final class SettingsPanel extends BackdropPanel {
     }
 
     /*
-     * DEFENSE: render
-     *
      * Draw labels/current volume, explain the three save files, show the resolved folder and status.
      * Actual controls and Apply callback remain ordinary Swing children.
      */

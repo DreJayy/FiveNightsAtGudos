@@ -13,21 +13,21 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /** Supplied title renders flicker in brief, randomly spaced bursts beneath the static. */
 /*
- * DEFENSE OVERVIEW: MenuPanel
+ * MenuPanel
  *
  * Purpose: Displays the title menu, enabled Continue state and random portrait flicker.
  *
- * Follow the flow: New Game -> startNight(1); Continue -> startNight(progress.nextNight()); Extras
+ * Execution flow: New Game -> startNight(1); Continue -> startNight(progress.nextNight()); Extras
  * -> page(EXTRAS); Quit -> quit.
  *
- * Code-based rationale and tradeoff: New Game deliberately preserves existing history. Continue is
+ * Design rationale: New Game deliberately preserves existing history. Continue is
  * enabled after any recorded attempt, even a loss. Keyboard selection skips disabled entries.
  * Flicker randomness is visual only.
  *
- * State to recognize: entries/selected track UI selection; renderIndex/flashesRemaining/untilFlicker
+ * State: entries/selected track UI selection; renderIndex/flashesRemaining/untilFlicker
  * drive the five menu portraits. reducedEffects selects the clean portrait.
  *
- * Defense answer: The menu delegates the complex start operation to the Navigation/Application
+ * Summary: The menu delegates the complex start operation to the Navigation/Application
  * facade. It does not create the session itself.
  */
 public final class MenuPanel extends ScenePanel {
@@ -41,8 +41,6 @@ public final class MenuPanel extends ScenePanel {
     private double untilFlicker = normalInterval();
 
     /*
-     * DEFENSE: normalInterval
-     *
      * Choose 3.5..10 seconds between visual flicker bursts using ThreadLocalRandom. This randomness
      * affects portraits only; Gudo route order remains deterministic.
      */
@@ -52,8 +50,6 @@ public final class MenuPanel extends ScenePanel {
 
     // Update only the title's flicker animation; there is no active game simulation on this screen.
     /*
-     * DEFENSE: tick
-     *
      * Advance visual age; reduced effects resets to the normal portrait. Otherwise count down,
      * choose a short burst of one to four different frightening portraits, then return to the normal
      * waiting interval.
@@ -83,8 +79,6 @@ public final class MenuPanel extends ScenePanel {
     }
 
     /*
-     * DEFENSE: MenuPanel constructor
-     *
      * Retain assets/settings/progress; wire New Game to startNight(1), Continue to
      * startNight(nextNight), Extras and Quit. Enable Continue only when totalRuns>0; install hover
      * and up/down/Enter selection. No database rows are erased.
@@ -109,8 +103,6 @@ public final class MenuPanel extends ScenePanel {
 
     // Share selection between mouse hover and keyboard navigation.
     /*
-     * DEFENSE: entry
-     *
      * Create a text-style button for a supplied navigation callback, capture its list index for
      * hover selection, and register it at a logical position. The callback passed here is where menu
      * functionality starts.
@@ -121,8 +113,6 @@ public final class MenuPanel extends ScenePanel {
         button.setFocusable(false);
         button.addMouseListener(new MouseAdapter() {
             /*
-             * DEFENSE: mouseEntered
-             *
              * If the hovered menu button is enabled, select its captured entry index. Hover and
              * keyboard navigation therefore update the same highlight state.
              */
@@ -134,8 +124,6 @@ public final class MenuPanel extends ScenePanel {
 
     // Wrap around the menu and skip disabled entries such as Continue before the first attempt.
     /*
-     * DEFENSE: move
-     *
      * Wrap the selected index using floorMod and skip disabled entries. Continue is disabled for
      * zero recorded attempts, so keyboard navigation cannot select it prematurely.
      */
@@ -146,8 +134,6 @@ public final class MenuPanel extends ScenePanel {
     }
 
     /*
-     * DEFENSE: select
-     *
      * Store the current index and update every button selected state. Mouse hover and keyboard
      * movement share the same visible selection.
      */
@@ -157,8 +143,6 @@ public final class MenuPanel extends ScenePanel {
     }
 
     /*
-     * DEFENSE: render
-     *
      * Draw the chosen title portrait, title, completion stars and next-night text from saved
      * Progress. Drawing progress does not itself unlock or save anything.
      */
@@ -175,8 +159,6 @@ public final class MenuPanel extends ScenePanel {
     }
 
     /*
-     * DEFENSE: renderOverlay
-     *
      * Draw the title VHS overlay at panel age and skip it when reducedEffects is enabled.
      */
     @Override protected void renderOverlay(Graphics2D g) {

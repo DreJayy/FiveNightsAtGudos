@@ -11,35 +11,31 @@ import java.awt.image.BufferedImage;
 
 /** Entry point: creates the window, loads local data/assets, then hands control to Application. */
 /*
- * DEFENSE OVERVIEW: Main
+ * Main
  *
  * Purpose: Starts the desktop application and loads its dependencies.
  *
- * Follow the flow: main schedules launch on Swing; launch shows LoadingPanel; SwingWorker loads
+ * Execution flow: main schedules launch on Swing; launch shows LoadingPanel; SwingWorker loads
  * paths, settings, database, progress and images; done constructs Application.
  *
- * Code-based rationale and tradeoff: The window can repaint while disk and image loading happen.
+ * Design rationale: The window can repaint while disk and image loading happen.
  * Boot is a record that transfers the loaded values together. Startup failures display a message and
  * dispose the window.
  *
- * State to recognize: Boot contains AppPaths, SettingsStore, Settings, Database, Progress and
+ * State: Boot contains AppPaths, SettingsStore, Settings, Database, Progress and
  * AssetManager. The loading Timer exists only during startup.
  *
- * Defense answer: Main is the entry point, not the gameplay loop. It prepares the program and hands
+ * Summary: Main is the entry point, not the gameplay loop. It prepares the program and hands
  * control to Application.
  */
 public final class Main {
     /*
-     * DEFENSE: Main constructor
-     *
      * Private constructor prevents creating utility entry-point objects. main and launch are static;
      * this is not a Singleton instance.
      */
     private Main() { }
 
     /*
-     * DEFENSE: main
-     *
      * Queue launch on the Swing event dispatch thread, then return. Swing component creation belongs
      * on that thread; doing all startup synchronously here would either use the wrong thread or
      * block the window.
@@ -50,8 +46,6 @@ public final class Main {
     }
 
     /*
-     * DEFENSE: launch
-     *
      * Set the visual defaults, create and show a loading window, and start a SwingWorker.
      * doInBackground loads writable paths, preferences, SQLite progress and assets; done stops the
      * loading timer and constructs Application on the EDT. A failed boot displays the real cause and
@@ -83,8 +77,6 @@ public final class Main {
         loadingTimer.start();
         new SwingWorker<Boot, Void>() {
             /*
-             * DEFENSE: doInBackground
-             *
              * Run boot IO and image decoding on the SwingWorker background thread. Resolve paths
              * first, because the stores need those paths; load Settings before profile progress,
              * because the saved playerName selects the profile. Return every dependency in one Boot
@@ -102,8 +94,6 @@ public final class Main {
             }
 
             /*
-             * DEFENSE: done
-             *
              * Run after the boot worker finishes, on the EDT. Stop loading animation; ignore
              * completion if the window was closed; otherwise get the Boot result and create
              * Application. Unwrap/report a failed worker instead of opening a partly initialized
@@ -130,8 +120,6 @@ public final class Main {
 
     // Draw the window icon in memory; no separate icon file is needed.
     /*
-     * DEFENSE: icon
-     *
      * Draw a small G icon into an in-memory image and dispose its Graphics2D. This avoids relying on
      * another icon resource file.
      */
@@ -150,7 +138,7 @@ public final class Main {
 
     // Immutable bundle carrying the worker's results back to the UI thread.
     /*
-     * DEFENSE TYPE: Boot
+     * Boot
      *
      * Immutable startup result bundle carried from SwingWorker background work to done on EDT.
      */

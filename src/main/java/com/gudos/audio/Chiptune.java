@@ -6,34 +6,30 @@ import java.io.ByteArrayInputStream;
 
 /** Synthesized 8-bit sounds: no external audio assets or libraries required. */
 /*
- * DEFENSE OVERVIEW: Chiptune
+ * Chiptune
  *
  * Purpose: Generates only the hidden minigame audio in memory.
  *
- * Follow the flow: create returns an AudioInputStream for SECRET_JUMP, SECRET_PICKUP or
+ * Execution flow: create returns an AudioInputStream for SECRET_JUMP, SECRET_PICKUP or
  * SECRET_AMBIENCE. AudioService opens it through the same clip path used for WAVs.
  *
- * Code-based rationale and tradeoff: Square waves and envelopes create small retro cues without
+ * Design rationale: Square waves and envelopes create small retro cues without
  * another library. The eight-second drone uses a deterministic noise sequence and quiet endpoints.
  * Current ordinary encounter sounds are bundled WAVs.
  *
- * State to recognize: The generated format is 22,050 Hz, signed eight-bit, mono PCM. The phase
+ * State: The generated format is 22,050 Hz, signed eight-bit, mono PCM. The phase
  * accumulates frequency/sampleRate; the envelope fades edges.
  *
- * Defense answer: A null Sound.path means synthesize this secret cue. Other cues load their WAV
+ * Summary: A null Sound.path means synthesize this secret cue. Other cues load their WAV
  * file; the whole audio system is not synthesized.
  */
 public final class Chiptune {
     /*
-     * DEFENSE: Chiptune constructor
-     *
      * Private constructor prevents instantiating this stateless audio generator.
      */
     private Chiptune() { }
 
     /*
-     * DEFENSE: create
-     *
      * Accept only the three secret cues; delegate ambience to its generator. For jump/pickup
      * allocate 8-bit mono PCM, advance square-wave phase at stepped frequencies, fade sample
      * amplitude at the ends and wrap it as AudioInputStream. Ordinary WAV cues are rejected here.
@@ -62,8 +58,6 @@ public final class Chiptune {
 
     /** Uneasy detuned square-wave drone and low-bit hiss, without notes, beats or a melody. */
     /*
-     * DEFENSE: ambience
-     *
      * Generate an eight-second signed 8-bit mono drone using two detuned square waves plus
      * deterministic coarse noise. Fade both endpoints toward silence so repeated looping avoids a
      * sharp boundary click.

@@ -7,27 +7,25 @@ import javax.swing.SwingUtilities;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
- * DEFENSE OVERVIEW: SecretLaunchTest
+ * SecretLaunchTest
  *
  * Purpose: JUnit checks for the production minigame configuration and an actually winnable timed
  * route.
  *
- * Follow the flow: Build Application.createSecretLevel; sample witness beams; search walk/wait
+ * Execution flow: Build Application.createSecretLevel; sample witness beams; search walk/wait
  * choices; replay a safe route and deliver. Also construct/paint the production panel on EDT.
  *
- * Code-based rationale and tradeoff: A path-existence check catches an impossible three-patrol
+ * Design rationale: A path-existence check catches an impossible three-patrol
  * layout. This is a test search algorithm, not gameplay AI.
  *
- * State to recognize: Nested Node is only a test search record; generated images go to
+ * State: Nested Node is only a test search record; generated images go to
  * target/ui-preview.
  *
- * Defense answer: The production level has a walkable safe route within sixty seconds; the test
+ * Summary: The production level has a walkable safe route within sixty seconds; the test
  * replays it into SecretGame and checks WON.
  */
 class SecretLaunchTest {
     /*
-     * DEFENSE: levelCanBeCompletedWithinTheTimer
-     *
      * Sample the production three-patrol beams at 0.02-second resolution. Search walk/wait choices
      * on 0.1-second steps, reconstruct a safe route, replay it into the actual SecretGame, deliver
      * and assert WON. This proves one route exists; it does not guide the player at runtime.
@@ -43,7 +41,7 @@ class SecretLaunchTest {
             for (int guard = 0; guard < 3; guard++) beams[i][guard] = reference.witnessBeam(guard);
         }
         /*
-         * DEFENSE TYPE: Node
+         * Node
          *
          * Test-only path-search node recording a position, predecessor and chosen direction for
          * route reconstruction.
@@ -84,8 +82,6 @@ class SecretLaunchTest {
         assertEquals(SecretGame.State.WON, game.state());
     }
     /*
-     * DEFENSE: productionLevelAndPanelCanBeConstructedOnSwingThread
-     *
      * Assert production width/cover/patrol counts, construct SecretPanel on EDT and paint
      * start/kitchen previews after safe no-pickup movement. This checks the real Builder product and
      * scrolling view can work together.

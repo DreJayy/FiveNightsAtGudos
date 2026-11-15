@@ -15,21 +15,21 @@ import java.util.List;
 
 /** Read-only table built from attempts already loaded by Application's storage worker. */
 /*
- * DEFENSE OVERVIEW: RecordsPanel
+ * RecordsPanel
  *
  * Purpose: Displays the current profile summary and read-only recent attempts table.
  *
- * Follow the flow: Extras -> Shift Records -> Application IO load -> constructor builds JTable from
+ * Execution flow: Extras -> Shift Records -> Application IO load -> constructor builds JTable from
  * the returned list.
  *
- * Code-based rationale and tradeoff: No SQL is run while rendering. Absolute Instants are displayed
+ * Design rationale: No SQL is run while rendering. Absolute Instants are displayed
  * in the local system zone. Only latest 200 rows are loaded; summary counts include all stored
  * attempts.
  *
- * State to recognize: player/progress/empty support headings/empty state; a noneditable
+ * State: player/progress/empty support headings/empty state; a noneditable
  * DefaultTableModel holds five columns and a JScrollPane provides scrolling.
  *
- * Defense answer: RecordsPanel displays saved history. Database.loadRuns performs
+ * Summary: RecordsPanel displays saved history. Database.loadRuns performs
  * filtering/order/limit, and loadProgress supplies totals.
  */
 public final class RecordsPanel extends BackdropPanel {
@@ -38,8 +38,6 @@ public final class RecordsPanel extends BackdropPanel {
     private final boolean empty;
 
     /*
-     * DEFENSE: RecordsPanel constructor
-     *
      * Receive already-loaded profile summary and recent rows, install Back, and if nonempty build a
      * read-only five-column JTable with local-zone timestamps, striped cells and scroll pane. No
      * JDBC runs in this constructor.
@@ -55,8 +53,6 @@ public final class RecordsPanel extends BackdropPanel {
         DateTimeFormatter date = DateTimeFormatter.ofPattern("MMM dd, yyyy  HH:mm").withZone(ZoneId.systemDefault());
         DefaultTableModel model = new DefaultTableModel(new String[]{"FINISHED", "NIGHT", "RESULT", "TIME ON DUTY", "POWER LEFT"}, 0) {
             /*
-             * DEFENSE: isCellEditable
-             *
              * Always return false for every row/column. The history table is a display of saved
              * results, not an editor for the underlying database.
              */
@@ -84,8 +80,6 @@ public final class RecordsPanel extends BackdropPanel {
         table.getColumnModel().getColumn(2).setPreferredWidth(235);
         DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
             /*
-             * DEFENSE: getTableCellRendererComponent
-             *
              * Reuse Swing default cell rendering, add padding, alternate row backgrounds and color
              * completed outcomes. It only styles existing values; it does not query or write SQL.
              */
@@ -111,8 +105,6 @@ public final class RecordsPanel extends BackdropPanel {
 
     // Summary counters cover all this profile's attempts, even though only the newest 200 rows are loaded.
     /*
-     * DEFENSE: render
-     *
      * Draw summary counters for this profile and the table empty-state message when needed. Counts
      * cover all attempts while the list query loads at most 200 recent rows.
      */

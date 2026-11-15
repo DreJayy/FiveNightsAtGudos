@@ -12,37 +12,33 @@ import java.util.Properties;
 
 /** A real, human-editable UTF-8 .txt settings file, read at startup and written on Apply. */
 /*
- * DEFENSE OVERVIEW: SettingsStore
+ * SettingsStore
  *
  * Purpose: Reads and replaces the UTF-8 settings.txt preferences file.
  *
- * Follow the flow: load creates defaults on first launch or parses Properties. save writes a
+ * Execution flow: load creates defaults on first launch or parses Properties. save writes a
  * temporary neighbor, then replaces the real file.
  *
- * Code-based rationale and tradeoff: Use explicit true/false parsing, volume fallback and Settings
+ * Design rationale: Use explicit true/false parsing, volume fallback and Settings
  * normalization. Atomic replacement reduces truncated settings; filesystems without atomic move use
  * a regular replacement fallback.
  *
- * State to recognize: file identifies one path. Keys: playerName, volume, reducedEffects,
+ * State: file identifies one path. Keys: playerName, volume, reducedEffects,
  * fullscreen. Malformed Properties syntax returns defaults; IO failures still propagate.
  *
- * Defense answer: settings.txt stores preferences. It does not unlock nights or restore a live
+ * Summary: settings.txt stores preferences. It does not unlock nights or restore a live
  * session; SQLite supplies progress.
  */
 public final class SettingsStore {
     private final Path file;
 
     /*
-     * DEFENSE: SettingsStore constructor
-     *
      * Retain the settings.txt path. File loading/writing happens only when load/save is called.
      */
     public SettingsStore(Path file) { this.file = file; }
 
     // First launch creates defaults. Later launches parse the key/value file and normalize its values.
     /*
-     * DEFENSE: load
-     *
      * On first launch save and return DEFAULT. Otherwise read UTF-8 Properties; malformed escapes
      * use DEFAULT, invalid volume text uses 55, booleans accept explicit true/false or fall back.
      * Construct Settings to sanitize name and clamp numeric bounds; ordinary IO errors propagate.
@@ -67,8 +63,6 @@ public final class SettingsStore {
 
     // Accept explicit true/false values and use the supplied fallback for unrecognized text.
     /*
-     * DEFENSE: booleanValue
-     *
      * Strip a property, compare true/false ignoring case, and return the supplied fallback for any
      * other text. This prevents an unrecognized preference from silently meaning true.
      */
@@ -81,8 +75,6 @@ public final class SettingsStore {
 
     // Save a complete replacement rather than appending another copy of the preferences.
     /*
-     * DEFENSE: save
-     *
      * Create the parent folder and write all four keys to a temporary UTF-8 file in that same
      * folder. Move it over settings.txt with ATOMIC_MOVE plus replacement, falling back only when
      * atomic move is unsupported. Finally delete any temporary residue. This is replacement, not

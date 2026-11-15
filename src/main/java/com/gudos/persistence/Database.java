@@ -16,22 +16,22 @@ import java.util.List;
 
 /** SQLite via JDBC. Connections are short-lived and all calls belong on the IO executor. */
 /*
- * DEFENSE OVERVIEW: Database
+ * Database
  *
  * Purpose: Persists local profiles, unlock summaries and attempt history using SQLite/JDBC.
  *
- * Follow the flow: Constructor configures/migrates schema; loadProgress selects/creates a profile;
+ * Execution flow: Constructor configures/migrates schema; loadProgress selects/creates a profile;
  * saveRun inserts an attempt and updates unlocks transactionally; loadRuns returns latest rows.
  *
- * Code-based rationale and tradeoff: Prepared statements bind player values. Foreign keys and
+ * Design rationale: Prepared statements bind player values. Foreign keys and
  * CHECK/UNIQUE constraints protect relations and ranges. A UUID primary key supports idempotent
  * retries; MAX preserves unlocks when replaying earlier nights.
  *
- * State to recognize: url points at one file. Schema user_version=5; profiles 1-to-1 progress and
+ * State: url points at one file. Schema user_version=5; profiles 1-to-1 progress and
  * 1-to-many night_runs. Index runs_by_profile(profile_id,ended_at DESC). busy_timeout=5000;
  * foreign_keys=ON per connection; WAL requested at initialization.
  *
- * Defense answer: The attempt insert and unlock update share one SQLite transaction. The text report
+ * Summary: The attempt insert and unlock update share one SQLite transaction. The text report
  * is a second operation outside that transaction. A failed text append may follow a committed
  * database save.
  */
@@ -39,8 +39,6 @@ public final class Database {
     private final String url;
 
     /*
-     * DEFENSE: Database constructor
-     *
      * Build the JDBC file URL, request WAL, inspect user_version and reject newer-than-five data.
      * Ensure profiles/progress/night_runs exist; rebuild legacy outcome-constrained tables in
      * transactions for supported versions, preserve existing rows/indexes, leave legacy completion
@@ -128,8 +126,6 @@ public final class Database {
     // Each night_runs row is a RunRecord linked to profiles.id through profile_id.
     // The table argument is an internal schema name, never supplied by a player.
     /*
-     * DEFENSE: runsTable
-     *
      * Return the internal CREATE TABLE statement with UUID primary key, profile foreign key, range
      * checks and all six allowed Outcome names. The formatted table name is a fixed internal
      * migration identifier, not player input.
@@ -151,8 +147,6 @@ public final class Database {
 
     // Each operation opens/closes its own connection. SQLite needs foreign keys enabled per connection.
     /*
-     * DEFENSE: connect
-     *
      * Open one JDBC SQLite connection; enable foreign_keys and a five-second busy timeout for that
      * connection. If configuration fails, close before rethrowing. Callers close the connection with
      * try-with-resources.
@@ -173,8 +167,6 @@ public final class Database {
     // Select or create the local profile, then ensure it has a default progress row.
     // SQL placeholders bind values separately from SQL syntax, including names with quotes.
     /*
-     * DEFENSE: profile
-     *
      * Bind the name/time into INSERT ... ON CONFLICT(name) DO NOTHING, select the case-insensitive
      * profile ID, and ensure a default progress row exists. Return the relational ID; player names
      * never become executable SQL syntax.
@@ -204,8 +196,6 @@ public final class Database {
     // Unlock fields come from progress; attempt/completion counts are calculated from night_runs.
     // Loading a name can create its profile if this is the first time it is used.
     /*
-     * DEFENSE: loadProgress
-     *
      * Open a connection, select/create the profile, and read next_night/highest_completed plus COUNT
      * subqueries for all and normally completed runs. Return one Progress value. This read may
      * create a new profile/progress row.
@@ -232,8 +222,6 @@ public final class Database {
 
     // Atomically save an attempt and its unlock update. The separate text report is not in this transaction.
     /*
-     * DEFENSE: saveRun
-     *
      * Get/create the profile, then disable auto-commit. Insert the stable run UUID with ON
      * CONFLICT(id) DO NOTHING. Only a newly inserted COMPLETED result updates progress using MAX and
      * a five-night cap. Commit attempt plus unlock update together; rollback on SQLException, close
@@ -288,8 +276,6 @@ public final class Database {
 
     // Return the newest 200 attempts for this player; older rows remain stored in SQLite.
     /*
-     * DEFENSE: loadRuns
-     *
      * Bind this profile ID into a SELECT ordered by ended_at DESC LIMIT 200. Reconstruct typed
      * RunRecord/Outcome/Instant values and return an unmodifiable list. Older rows stay stored and
      * still contribute to progress counts.

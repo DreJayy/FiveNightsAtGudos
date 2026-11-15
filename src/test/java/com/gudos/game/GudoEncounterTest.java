@@ -5,25 +5,23 @@ import java.time.Duration;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
- * DEFENSE OVERVIEW: GudoEncounterTest
+ * GudoEncounterTest
  *
  * Purpose: JUnit checks for route order, defense, timing and outcome precedence.
  *
- * Follow the flow: Advance exact event times, defend/ignore/pause, compare coarse/fine updates and
+ * Execution flow: Advance exact event times, defend/ignore/pause, compare coarse/fine updates and
  * survive all five nights with reaction delay.
  *
- * Code-based rationale and tradeoff: Headless deterministic tests catch boundary errors that a
+ * Design rationale: Headless deterministic tests catch boundary errors that a
  * single visual playthrough can miss.
  *
- * State to recognize: nextOffice and repel are test helpers, not production shortcuts.
+ * State: nextOffice and repel are test helpers, not production shortcuts.
  *
- * Defense answer: Ignoring the first Night 1 encounter catches at 60 active seconds; correct
+ * Summary: Ignoring the first Night 1 encounter catches at 60 active seconds; correct
  * directional sustained light repels.
  */
 class GudoEncounterTest {
     /*
-     * DEFENSE: followsConnectedRoutesAndClearsPreviousRooms
-     *
      * Advance Night 1 by exact waits 18,11,11,11, assert 04->03->02->left office, repel, then verify
      * right and front cycles and previous-room cleanup.
      */
@@ -53,8 +51,6 @@ class GudoEncounterTest {
     }
 
     /*
-     * DEFENSE: ignoringGudoIsFatalEvenWithALongFrameOrOpenMonitor
-     *
      * For both monitor states supply a huge delta with a one-second test timeout; assert CAUGHT at
      * exactly 60 active seconds and a stable final record.
      */
@@ -75,8 +71,6 @@ class GudoEncounterTest {
     }
 
     /*
-     * DEFENSE: flashlightMustFaceTheDoorAndFadesGradually
-     *
      * Show wrong-facing light adds no fade, correct light adds partial fade, interruption decays it
      * and sufficient resumed exposure repels.
      */
@@ -102,8 +96,6 @@ class GudoEncounterTest {
     }
 
     /*
-     * DEFENSE: pauseFreezesAttackAndFadeButReleasesLight
-     *
      * Pause partway through defense, advance a huge delta, and assert attack/fade frozen and light
      * off; after resume without light exposure decays.
      */
@@ -126,8 +118,6 @@ class GudoEncounterTest {
     }
 
     /*
-     * DEFENSE: monitorPreventsFlashlightDefense
-     *
      * Open monitor during an office threat, attempt light and assert fade remains zero even though
      * the threat continues.
      */
@@ -143,8 +133,6 @@ class GudoEncounterTest {
     }
 
     /*
-     * DEFENSE: allFiveNightsCanBeSurvivedWithReactionTimeAndConservedPower
-     *
      * Simulate five full nights with a 1.8-second reaction delay before correct defense; require
      * completion, multiple repels and >50 power. Check later-night attack window is shorter.
      */
@@ -174,8 +162,6 @@ class GudoEncounterTest {
     }
 
     /*
-     * DEFENSE: morningTakesPriorityAtAnAttackDeadline
-     *
      * Use a sixty-second Night 1 duration whose morning coincides with the first attack, then assert
      * normal COMPLETED wins the deadline tie.
      */
@@ -187,8 +173,6 @@ class GudoEncounterTest {
     }
 
     /*
-     * DEFENSE: simulationIsIndependentOfFrameSize
-     *
      * Compare one huge update against repeated 1/60-second updates for Night 3; outcome, final time
      * and power must agree within tolerance.
      */
@@ -203,8 +187,6 @@ class GudoEncounterTest {
     }
 
     /*
-     * DEFENSE: nextOffice
-     *
      * Advance small model steps until an office arrival or a bounded iteration limit; assert the
      * encounter is active and the shift is not already finished.
      */
@@ -215,8 +197,6 @@ class GudoEncounterTest {
     }
 
     /*
-     * DEFENSE: repel
-     *
      * Set exactly the approach pan, hold light for required flashSeconds, release it and assert the
      * office encounter ended.
      */

@@ -7,25 +7,23 @@ import java.awt.image.BufferedImage;
 import static org.junit.jupiter.api.Assertions.*;
 
 /*
- * DEFENSE OVERVIEW: PanoramaRendererTest
+ * PanoramaRendererTest
  *
  * Purpose: JUnit checks for curved projection and output reuse.
  *
- * Follow the flow: Generate a colored gradient; compare vertical edge/center samples and left/right
+ * Execution flow: Generate a colored gradient; compare vertical edge/center samples and left/right
  * center pixels; check image object identity.
  *
- * Code-based rationale and tradeoff: A gradient reveals sampling math without relying on a
+ * Design rationale: A gradient reveals sampling math without relying on a
  * particular room photo. Reused identity proves allocation behavior.
  *
- * State to recognize: gradient is an artificial diagnostic image, not a game asset.
+ * State: gradient is an artificial diagnostic image, not a game asset.
  *
- * Defense answer: The edge samples bend differently from the middle, and turning reveals different
+ * Summary: The edge samples bend differently from the middle, and turning reveals different
  * source columns.
  */
 class PanoramaRendererTest {
     /*
-     * DEFENSE: gradient
-     *
      * Build a synthetic horizontal/vertical color gradient whose pixel channels reveal the sampled
      * source position.
      */
@@ -38,8 +36,6 @@ class PanoramaRendererTest {
     }
 
     /*
-     * DEFENSE: perspectiveCurvesVerticalSamplingInsteadOfJustCropping
-     *
      * Render centered gradient and compare top edge versus top center green channel; require a
      * difference large enough to prove nonflat vertical sampling.
      */
@@ -51,8 +47,6 @@ class PanoramaRendererTest {
     }
 
     /*
-     * DEFENSE: turningRevealsDifferentPartsOfTheRoomAndReusesOutputBuffer
-     *
      * Render left then right, compare center pixels for changed view, and assert both calls return
      * the same reused image object. An unchanged view must also reuse it.
      */

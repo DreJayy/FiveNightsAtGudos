@@ -19,27 +19,25 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /** Optional integration check with an undisplayed JFrame and isolated database; no Robot input. */
 /*
- * DEFENSE OVERVIEW: SecretNavigationSmoke
+ * SecretNavigationSmoke
  *
  * Purpose: Optional integration executable for the paper trigger and secret-result restart pipeline.
  *
- * Follow the flow: Create isolated SQLite/profile/legacy flags; construct Application with an
+ * Execution flow: Create isolated SQLite/profile/legacy flags; construct Application with an
  * undisplayed JFrame; compute a real paper hit; issue five clicks; verify SecretPanel is active and
  * both outcomes save/restart Night 1.
  *
- * Code-based rationale and tradeoff: Reflection exposes coordinator state only in this diagnostic.
+ * Design rationale: Reflection exposes coordinator state only in this diagnostic.
  * It avoids Robot input but still constructs JFrame, so it needs a display environment.
  *
- * State to recognize: Uses private current/session/close/finishSecret by reflection; a ten-second
+ * State: Uses private current/session/close/finishSecret by reflection; a ten-second
  * deadline prevents an infinite diagnostic wait.
  *
- * Defense answer: It proves creating a SecretPanel is not enough: the active card must change, saves
+ * Summary: It proves creating a SecretPanel is not enough: the active card must change, saves
  * must finish and the same normal night must restart.
  */
 public final class SecretNavigationSmoke {
     /*
-     * DEFENSE: main
-     *
      * Use an isolated real database and an undisplayed JFrame, simulate legacy secret flags, start
      * Night 1, reverse-map a valid CAM 04 paper hit and dispatch five real mouseClicked events.
      * Check visible SecretPanel, success/failure persistence and same-night restart; always close
@@ -144,8 +142,6 @@ public final class SecretNavigationSmoke {
     }
 
     /*
-     * DEFENSE: verifySecretResult
-     *
      * Invoke the coordinator secret completion with a chosen outcome, verify the frozen secret
      * remains during save, then poll until a fresh Night 1 GamePanel appears. A timeout fails the
      * smoke check rather than hanging.
