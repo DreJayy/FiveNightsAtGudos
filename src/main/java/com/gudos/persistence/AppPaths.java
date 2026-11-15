@@ -14,7 +14,7 @@ import java.nio.file.Path;
  * and ShiftLogStore use the three child paths.
  *
  * Design rationale: A JAR contains read-only resources; user saves need a writable
- * external folder. gudo.dataDir supports isolated demos/tests without changing ordinary player data.
+ * external folder. gudo.dataDir supports isolated runs without changing ordinary player data.
  *
  * State: directory is normalized absolute. database() -> gudo.db, settings() ->
  * settings.txt, shiftLog() -> shift-log.txt.
