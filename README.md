@@ -155,9 +155,11 @@ This uses isolated saves and captures only the game window under `target/desktop
 
 The distributable is **`target/five-nights-at-gudos.jar`**; dependencies and runtime assets are bundled. The smaller version-numbered JAR is only an intermediate build artifact, not the distributable.
 
-## Defense reviewer
+## Project reviewer
 
-The [complete defense reference](docs/defense/README.md) explains every Java file and explicitly declared method/constructor, with exact source links, feature demonstrations, worked examples, pattern participants, and practice questions. The New Game/navigation facade is covered alongside the audio facade and renderer Decorator. The hidden level's `SecretLevelBuilder` is an additional **creational Builder**, separate from the two structural pattern types.
+The [project documentation](docs/defense/README.md) includes a **45-page LaTeX reviewer**, with file responsibilities, clickable source locations, feature demonstrations, worked examples, pattern participants and practice questions. Its XeLaTeX source is included. Detailed method comments remain beside the code, using ordinary documentation wording.
+
+The New Game/navigation facade is covered alongside the audio facade and renderer Decorator. The hidden level's `SecretLevelBuilder` is an additional **creational Builder**, separate from the two structural pattern types.
 
 ## Asset rights
 

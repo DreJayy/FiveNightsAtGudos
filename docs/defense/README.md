@@ -1,13 +1,23 @@
-# Project defense reference
+# Project documentation
 
-[Open the complete reviewer](FiveNightsAtGudos_Complete_Defense_Reviewer.md).
+The project reviewer is a **45-page XeLaTeX document**, with readable typography, typeset equations, compact source-file cards, demonstration paths and 60 practice questions.
 
-The reference covers every Java file and explicit method/constructor, clickable source locations, click-by-click feature demonstrations, worked gameplay/save examples, pattern participants, and 60 defense questions. The downloadable PDF edition is supplied separately.
+- [Typesetting source](FiveNightsAtGudos_Reviewer.tex)
+- [Text reference and file locator](FiveNightsAtGudos_Complete_Defense_Reviewer.md)
 
-The Java comments are based on source commit `b27297ab9e687518fc1543908740e5926969cf96`. The reviewer source links are pinned to annotated commit `7e6f0112de35a3fb648e45b1c0f53e876f6e98e4`.
+All 59 Java files are covered. The full explanations for 415 explicitly declared methods/constructors remain in ordinary source comments; repetitive method-by-method narration is not duplicated in the PDF. The cleaned source snapshot is `38bad49955420cd2dddab0fbae81f2d891a84e75`.
 
-New Game, Continue, night selection and next/replay buttons all use the `Navigation.startNight` contract implemented by `Application`, which has a facade role. `AudioService` is another facade, renderer wrappers implement Decorator, and the secret level uses Builder.
+## Compile the PDF
 
-Validation for the comment changes: all 59 Java files have unchanged parsed executable syntax; all 70 production class files compile and match the original byte-for-byte with debug metadata disabled. The available JDK 21 compiler used source/target 17. The full Maven verification could not download dependencies because the Maven host was unreachable; it is not reported as passed. Twelve documentation screenshots were rendered from actual Swing views with controlled demo state.
+Use XeLaTeX with a standard TeX Live or MiKTeX installation. From the repository root, create `target/reviewer`, then run twice:
 
-The screenshots illustrate game layouts and model states, and do not prove physical audio or native focus/fullscreen on every operating system.
+```sh
+xelatex -interaction=nonstopmode -halt-on-error -output-directory=target/reviewer docs/defense/FiveNightsAtGudos_Reviewer.tex
+xelatex -interaction=nonstopmode -halt-on-error -output-directory=target/reviewer docs/defense/FiveNightsAtGudos_Reviewer.tex
+```
+
+The source uses Latin Modern fonts, standard LaTeX math, fontspec, geometry, booktabs/tabularx, enumitem, microtype, xcolor, graphicx, fancyhdr, titlesec, hyperref/xurl, lastpage, listings and tcolorbox/TikZ. It includes font-name fallbacks for non-Linux installations. Figure files are in `figures/`.
+
+New Game, Continue, night selection and replay share the Navigation.startNight contract implemented by Application. That coordinating boundary and AudioService provide facade examples; renderer wrappers implement Decorator and SecretLevelBuilder implements Builder.
+
+The Java cleanup removes presentation-oriented labels without changing executable syntax. All 70 production class files match original bytes when compiled without debug metadata. Full Maven verification remains blocked by dependency-host access; no passing JUnit/native GUI/audio run is claimed.
