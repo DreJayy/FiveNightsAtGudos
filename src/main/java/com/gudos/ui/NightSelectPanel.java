@@ -1,4 +1,3 @@
-// Purpose: Display selectable nights and enable them according to saved progress.
 package com.gudos.ui;
 
 import com.gudos.assets.AssetManager;

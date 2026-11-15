@@ -1,4 +1,3 @@
-// Purpose: Define the named sound cues, their audio paths, and their relative volume levels.
 package com.gudos.audio;
 
 /** Named cues have gains relative to master volume; a null path means Chiptune synthesizes them. */

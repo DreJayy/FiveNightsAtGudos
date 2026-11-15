@@ -1,4 +1,3 @@
-// Purpose: Run the minigame's movement, timer, body, witness detection, and win/loss rules.
 package com.gudos.game.minigame;
 
 import java.awt.Rectangle;

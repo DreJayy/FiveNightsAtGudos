@@ -1,4 +1,3 @@
-// Purpose: Coordinate screens, game sessions, audio, and background saving.
 package com.gudos;
 
 import com.gudos.assets.AssetManager;

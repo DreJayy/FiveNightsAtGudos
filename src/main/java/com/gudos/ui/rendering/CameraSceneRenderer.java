@@ -1,4 +1,3 @@
-// Purpose: Draw the base CCTV room view used by the renderer decorators.
 package com.gudos.ui.rendering;
 
 import com.gudos.assets.AssetManager;

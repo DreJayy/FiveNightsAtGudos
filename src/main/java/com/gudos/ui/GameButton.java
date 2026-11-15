@@ -1,4 +1,3 @@
-// Purpose: Provide a custom-drawn Swing button with reusable game styles.
 package com.gudos.ui;
 
 import javax.swing.*;

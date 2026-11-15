@@ -1,4 +1,3 @@
-// Purpose: Load and provide scene images and visual assets used by the game.
 package com.gudos.assets;
 
 import com.gudos.game.Scene;

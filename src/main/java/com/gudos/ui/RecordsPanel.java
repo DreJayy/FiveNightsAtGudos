@@ -1,4 +1,3 @@
-// Purpose: Display previously loaded shift attempts in a read-only table.
 package com.gudos.ui;
 
 import com.gudos.assets.AssetManager;

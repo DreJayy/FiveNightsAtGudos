@@ -1,4 +1,3 @@
-// Purpose: Provide common screen scaling, drawing, and control placement for game panels.
 package com.gudos.ui;
 
 import javax.swing.*;

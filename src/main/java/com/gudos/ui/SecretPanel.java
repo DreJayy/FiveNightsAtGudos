@@ -1,4 +1,3 @@
-// Purpose: Draw the minigame and translate player input into actions on SecretGame.
 package com.gudos.ui;
 
 import com.gudos.audio.Sound;

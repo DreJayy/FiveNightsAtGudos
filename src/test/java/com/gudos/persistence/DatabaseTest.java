@@ -1,4 +1,3 @@
-// Purpose: Test database migrations, profile progress, and saved shift records.
 package com.gudos.persistence;
 
 import com.gudos.game.GameSession;

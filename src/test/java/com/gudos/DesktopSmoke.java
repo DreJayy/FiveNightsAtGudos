@@ -1,4 +1,3 @@
-// Purpose: Optionally smoke-test the running desktop game with real window and input interaction.
 package com.gudos;
 
 import com.gudos.game.Outcome;

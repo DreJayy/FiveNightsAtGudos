@@ -1,4 +1,3 @@
-// Purpose: Check panorama projection and how the rendered view changes with camera movement.
 package com.gudos.assets;
 
 import org.junit.jupiter.api.Test;

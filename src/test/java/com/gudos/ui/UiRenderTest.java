@@ -1,4 +1,3 @@
-// Purpose: Test and preview Swing screen rendering, including the minigame transition.
 package com.gudos.ui;
 
 import com.gudos.assets.AssetManager;

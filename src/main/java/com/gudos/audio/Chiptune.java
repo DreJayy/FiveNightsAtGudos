@@ -1,4 +1,3 @@
-// Purpose: Generate the minigame's retro sound effects and ambience in memory.
 package com.gudos.audio;
 
 import javax.sound.sampled.AudioFormat;

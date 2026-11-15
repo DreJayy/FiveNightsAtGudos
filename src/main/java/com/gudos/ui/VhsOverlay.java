@@ -1,4 +1,3 @@
-// Purpose: Paint animated TV interference, scanlines, and tracking bands.
 package com.gudos.ui;
 
 import com.gudos.assets.AssetManager;

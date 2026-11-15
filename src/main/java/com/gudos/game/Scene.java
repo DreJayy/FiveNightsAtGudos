@@ -1,4 +1,3 @@
-// Purpose: Identify the office and camera rooms used by game logic and rendering.
 package com.gudos.game;
 
 /** Room identifiers shared by gameplay, camera controls, and the scene-image manifest. */

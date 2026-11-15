@@ -1,4 +1,3 @@
-// Purpose: Hold a player's saved night-unlock and shift-attempt summary.
 package com.gudos.persistence;
 
 /** Database summary used by Continue, night selection, and records; counts are derived from attempts. */

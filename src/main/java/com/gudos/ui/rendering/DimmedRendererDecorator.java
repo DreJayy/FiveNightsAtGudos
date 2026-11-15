@@ -1,4 +1,3 @@
-// Purpose: Add a dark tint after drawing another scene renderer.
 package com.gudos.ui.rendering;
 
 import com.gudos.ui.ScenePanel;

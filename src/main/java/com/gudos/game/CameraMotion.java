@@ -1,4 +1,3 @@
-// Purpose: Calculate the automatic left-to-right sweep of each CCTV camera.
 package com.gudos.game;
 
 /** Each CCTV camera sweeps on its own clock, even while a different feed is watched. */

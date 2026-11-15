@@ -1,4 +1,3 @@
-// Purpose: Read and write the human-editable settings text file.
 package com.gudos.persistence;
 
 import java.io.IOException;

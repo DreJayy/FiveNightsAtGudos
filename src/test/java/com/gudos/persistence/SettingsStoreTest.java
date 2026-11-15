@@ -1,4 +1,3 @@
-// Purpose: Test reading, writing, and handling the settings text file.
 package com.gudos.persistence;
 
 import org.junit.jupiter.api.Test;

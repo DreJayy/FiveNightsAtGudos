@@ -1,4 +1,3 @@
-// Purpose: Provide the shared Decorator base that wraps and delegates to another renderer.
 package com.gudos.ui.rendering;
 
 import java.awt.Graphics2D;

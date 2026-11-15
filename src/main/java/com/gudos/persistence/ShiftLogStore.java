@@ -1,4 +1,3 @@
-// Purpose: Append human-readable shift reports to the text log.
 package com.gudos.persistence;
 
 import com.gudos.game.RunRecord;

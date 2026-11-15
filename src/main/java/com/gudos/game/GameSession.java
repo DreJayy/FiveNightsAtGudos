@@ -1,4 +1,3 @@
-// Purpose: Simulate a night shift, including time, power, controls, encounters, and outcomes.
 package com.gudos.game;
 
 import java.time.Instant;

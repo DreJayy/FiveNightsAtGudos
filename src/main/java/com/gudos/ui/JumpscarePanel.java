@@ -1,4 +1,3 @@
-// Purpose: Draw and animate the jumpscare after Sir Gudo catches the player.
 package com.gudos.ui;
 
 import com.gudos.assets.AssetManager;

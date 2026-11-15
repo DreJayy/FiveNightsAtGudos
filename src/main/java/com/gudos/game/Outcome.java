@@ -1,4 +1,3 @@
-// Purpose: List the possible outcomes of a shift, including minigame success and failure.
 package com.gudos.game;
 
 /** Stored enum names remain stable in SQLite; labels are the player-facing descriptions. */

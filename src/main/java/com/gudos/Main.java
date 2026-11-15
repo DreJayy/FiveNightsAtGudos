@@ -1,4 +1,3 @@
-// Purpose: Start the application, load its services, and open the Swing window.
 package com.gudos;
 
 import com.gudos.assets.AssetManager;

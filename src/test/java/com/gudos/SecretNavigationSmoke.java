@@ -1,4 +1,3 @@
-// Purpose: Smoke-test opening the hidden minigame, saving outcomes, and restarting the night.
 package com.gudos;
 
 import com.gudos.assets.AssetManager;

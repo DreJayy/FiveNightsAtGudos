@@ -1,4 +1,3 @@
-// Purpose: Display the Extras menu and request navigation to its pages.
 package com.gudos.ui;
 
 import com.gudos.assets.AssetManager;

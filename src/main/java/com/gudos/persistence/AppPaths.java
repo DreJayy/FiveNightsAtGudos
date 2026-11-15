@@ -1,4 +1,3 @@
-// Purpose: Locate the writable settings, database, and report files for the application.
 package com.gudos.persistence;
 
 import java.io.IOException;

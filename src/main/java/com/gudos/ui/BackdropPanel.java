@@ -1,4 +1,3 @@
-// Purpose: Provide a shared background and navigation layout for secondary screens.
 package com.gudos.ui;
 
 import com.gudos.assets.AssetManager;
