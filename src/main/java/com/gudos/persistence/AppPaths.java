@@ -5,11 +5,38 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /** Resolves writable player-data files outside the application and its bundled resources. */
+/*
+ * AppPaths
+ *
+ * Purpose: Resolves writable player-data paths outside the packaged game.
+ *
+ * Execution flow: Main calls resolve; SettingsPanel displays the folder; Database, SettingsStore
+ * and ShiftLogStore use the three child paths.
+ *
+ * Design rationale: A JAR contains read-only resources; user saves need a writable
+ * external folder. gudo.dataDir supports isolated runs without changing ordinary player data.
+ *
+ * State: directory is normalized absolute. database() -> gudo.db, settings() ->
+ * settings.txt, shiftLog() -> shift-log.txt.
+ *
+ * Summary: The priority is explicit system property, then LOCALAPPDATA if present, then the
+ * home directory fallback. It is based on the available environment value, not an explicit
+ * operating-system check.
+ */
 public record AppPaths(Path directory) {
+    /*
+     * Normalize the supplied directory into an absolute path. resolve is responsible for creating
+     * it; direct construction alone does not create the directory.
+     */
     public AppPaths {
         directory = directory.toAbsolutePath().normalize();
     }
 
+    /*
+     * Prefer nonblank -Dgudo.dataDir; otherwise use LOCALAPPDATA/FiveNightsAtGudos when that
+     * environment variable exists; otherwise use user.home/.five-nights-at-gudos. Create the folder
+     * and return normalized paths. The override is useful for safe isolated demos.
+     */
     public static AppPaths resolve() throws IOException {
         // Priority: -Dgudo.dataDir override, Windows LocalAppData, then the user's home folder.
         String override = System.getProperty("gudo.dataDir");
@@ -22,7 +49,19 @@ public record AppPaths(Path directory) {
     }
 
     // SQLite is the source for progress/history; the log is a report and settings are preferences.
+    /*
+     * Resolve gudo.db beneath the chosen writable directory. This is SQLite storage, not a bundled
+     * resource.
+     */
     public Path database() { return directory.resolve("gudo.db"); }
+    /*
+     * Resolve settings.txt beneath the chosen writable directory. Preferences are editable UTF-8
+     * key/value text.
+     */
     public Path settings() { return directory.resolve("settings.txt"); }
+    /*
+     * Resolve shift-log.txt beneath the chosen writable directory. This is a report, not the
+     * authoritative progress file.
+     */
     public Path shiftLog() { return directory.resolve("shift-log.txt"); }
 }

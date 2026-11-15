@@ -7,15 +7,42 @@ import java.awt.Graphics2D;
 import java.util.Objects;
 
 /** Adds animated VHS interference without changing the wrapped renderer. */
+/*
+ * VhsRendererDecorator
+ *
+ * Purpose: Adds optional VHS interference after its wrapped renderer draws.
+ *
+ * Execution flow: Normal camera uses opacity 0.25; switching adds an outer opacity 0.85 layer at
+ * speed 3.
+ *
+ * Design rationale: Delegate with original time so effect speed affects only this
+ * wrapper. Skip noise when reducedEffects or opacity=0, but still render the wrapped room.
+ *
+ * State: assets/opacity/speed are validated configuration; copied effect Graphics2D is
+ * disposed in finally.
+ *
+ * Summary: The wrapper changes rendering by adding a layer, without modifying
+ * CameraSceneRenderer. Another decorator can wrap it.
+ */
 public final class VhsRendererDecorator extends RendererDecorator {
     private final AssetManager assets;
     private final float opacity;
     private final double speed;
 
+    /*
+     * The three-argument overload delegates with speed1. The full overload retains a nonnull asset
+     * manager, validates finite opacity0..1 and positive finite speed, and retains the wrapped
+     * renderer through super.
+     */
     public VhsRendererDecorator(SceneRenderer wrapped, AssetManager assets, float opacity) {
         this(wrapped, assets, opacity, 1);
     }
 
+    /*
+     * The three-argument overload delegates with speed1. The full overload retains a nonnull asset
+     * manager, validates finite opacity0..1 and positive finite speed, and retains the wrapped
+     * renderer through super.
+     */
     public VhsRendererDecorator(SceneRenderer wrapped, AssetManager assets, float opacity, double speed) {
         super(wrapped);
         this.assets = Objects.requireNonNull(assets);
@@ -25,6 +52,11 @@ public final class VhsRendererDecorator extends RendererDecorator {
         this.speed = speed;
     }
 
+    /*
+     * Render the wrapped component with original time first. If effects are allowed and opacity>0,
+     * draw VHS on a copied context using time*speed for this wrapper only. Dispose the copy so its
+     * graphics state cannot leak into the HUD.
+     */
     @Override public void render(Graphics2D graphics, double time, boolean reducedEffects) {
         super.render(graphics, time, reducedEffects);
         if (reducedEffects || opacity == 0) return;

@@ -12,6 +12,24 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 /** Supplied title renders flicker in brief, randomly spaced bursts beneath the static. */
+/*
+ * MenuPanel
+ *
+ * Purpose: Displays the title menu, enabled Continue state and random portrait flicker.
+ *
+ * Execution flow: New Game -> startNight(1); Continue -> startNight(progress.nextNight()); Extras
+ * -> page(EXTRAS); Quit -> quit.
+ *
+ * Design rationale: New Game deliberately preserves existing history. Continue is
+ * enabled after any recorded attempt, even a loss. Keyboard selection skips disabled entries.
+ * Flicker randomness is visual only.
+ *
+ * State: entries/selected track UI selection; renderIndex/flashesRemaining/untilFlicker
+ * drive the five menu portraits. reducedEffects selects the clean portrait.
+ *
+ * Summary: The menu delegates the complex start operation to the Navigation/Application
+ * facade. It does not create the session itself.
+ */
 public final class MenuPanel extends ScenePanel {
     private final AssetManager assets;
     private final Settings settings;
@@ -22,11 +40,20 @@ public final class MenuPanel extends ScenePanel {
     private int flashesRemaining;
     private double untilFlicker = normalInterval();
 
+    /*
+     * Choose 3.5..10 seconds between visual flicker bursts using ThreadLocalRandom. This randomness
+     * affects portraits only; Gudo route order remains deterministic.
+     */
     private static double normalInterval() {
         return ThreadLocalRandom.current().nextDouble(3.5, 10.0);
     }
 
     // Update only the title's flicker animation; there is no active game simulation on this screen.
+    /*
+     * Advance visual age; reduced effects resets to the normal portrait. Otherwise count down,
+     * choose a short burst of one to four different frightening portraits, then return to the normal
+     * waiting interval.
+     */
     @Override public void tick(double seconds) {
         super.tick(seconds);
         if (settings.reducedEffects()) {
@@ -51,6 +78,11 @@ public final class MenuPanel extends ScenePanel {
         untilFlicker = random.nextDouble(0.055, 0.14);
     }
 
+    /*
+     * Retain assets/settings/progress; wire New Game to startNight(1), Continue to
+     * startNight(nextNight), Extras and Quit. Enable Continue only when totalRuns>0; install hover
+     * and up/down/Enter selection. No database rows are erased.
+     */
     public MenuPanel(AssetManager assets, Navigation navigation, Settings settings, Progress progress) {
         this.assets = assets;
         this.settings = settings;
@@ -70,11 +102,20 @@ public final class MenuPanel extends ScenePanel {
     }
 
     // Share selection between mouse hover and keyboard navigation.
+    /*
+     * Create a text-style button for a supplied navigation callback, capture its list index for
+     * hover selection, and register it at a logical position. The callback passed here is where menu
+     * functionality starts.
+     */
     private GameButton entry(String text, int y, Runnable action) {
         int index = entries.size();
         GameButton button = new GameButton(text, GameButton.Style.TEXT, action);
         button.setFocusable(false);
         button.addMouseListener(new MouseAdapter() {
+            /*
+             * If the hovered menu button is enabled, select its captured entry index. Hover and
+             * keyboard navigation therefore update the same highlight state.
+             */
             @Override public void mouseEntered(MouseEvent event) { if (button.isEnabled()) select(index); }
         });
         entries.add(place(button, 103, y, 450, 62));
@@ -82,17 +123,29 @@ public final class MenuPanel extends ScenePanel {
     }
 
     // Wrap around the menu and skip disabled entries such as Continue before the first attempt.
+    /*
+     * Wrap the selected index using floorMod and skip disabled entries. Continue is disabled for
+     * zero recorded attempts, so keyboard navigation cannot select it prematurely.
+     */
     private void move(int direction) {
         int index = selected;
         do { index = Math.floorMod(index + direction, entries.size()); } while (!entries.get(index).isEnabled());
         select(index);
     }
 
+    /*
+     * Store the current index and update every button selected state. Mouse hover and keyboard
+     * movement share the same visible selection.
+     */
     private void select(int index) {
         selected = index;
         for (int i = 0; i < entries.size(); i++) entries.get(i).setSelected(i == index);
     }
 
+    /*
+     * Draw the chosen title portrait, title, completion stars and next-night text from saved
+     * Progress. Drawing progress does not itself unlock or save anything.
+     */
     @Override protected void render(Graphics2D g) {
         g.setColor(Color.BLACK);
         g.fillRect(0, 0, WIDTH, HEIGHT);
@@ -105,6 +158,9 @@ public final class MenuPanel extends ScenePanel {
         Theme.text(g, "Five Nights at Gudo's", 1010, 707, Theme.pixel(22), Color.WHITE);
     }
 
+    /*
+     * Draw the title VHS overlay at panel age and skip it when reducedEffects is enabled.
+     */
     @Override protected void renderOverlay(Graphics2D g) {
         VhsOverlay.paint(g, assets, age, 0.46f, settings.reducedEffects());
     }

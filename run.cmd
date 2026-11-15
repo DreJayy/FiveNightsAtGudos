@@ -15,7 +15,7 @@ set "JAVA_HOME=%GAME_JAVA_HOME%"
 set "PATH=%JAVA_HOME%\bin;%PATH%"
 echo Using Java from "%JAVA_HOME%"
 pushd "%~dp0"
-call mvnw.cmd -q -DskipTests package
+call mvnw.cmd -q package
 if errorlevel 1 (
     popd
     exit /b 1
